@@ -1,0 +1,18 @@
+[package]
+name = "disrustor"
+version = "0.1.0"
+authors = ["Sebastian Klose <mail@sklose.com>"]
+edition = "2018"
+
+[dependencies]
+log = "0.4.7"
+
+[dev-dependencies]
+criterion = "0.2.11"
+fern = "0.5.8"
+chrono = "0.4.7"
+disrustor = { path = "." }
+
+[[bench]]
+name = "my_benchmark"
+harness = false
