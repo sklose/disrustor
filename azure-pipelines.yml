@@ -6,18 +6,23 @@ strategy:
     windows-stable:
       imageName: 'vs2017-win2016'
       rustup_toolchain: stable
+      lint: false
     mac-stable:
       imageName: 'macos-10.13'
       rustup_toolchain: stable
+      lint: false
     linux-stable:
       imageName: 'ubuntu-16.04'
       rustup_toolchain: stable
+      lint: true
     linux-beta:
       imageName: 'ubuntu-16.04'
       rustup_toolchain: beta
+      lint: false
     linux-nightly:
       imageName: 'ubuntu-16.04'
       rustup_toolchain: nightly
+      lint: false
 
 pool:
   vmImage: $(imageName)
@@ -38,3 +43,9 @@ steps:
     displayName: Cargo build
   - script: cargo test --all
     displayName: Cargo test
+  - script: |
+      rustup component add rustfmt clippy-preview
+      cargo fmt -- --color=always --check
+      cargo clippy --color=always --all --all-features
+    displayName: Lint
+    condition: eq( variables['lint'], 'true' )
