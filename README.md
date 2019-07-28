@@ -1,3 +1,5 @@
+[![Build Status](https://sklose.visualstudio.com/disrustor/_apis/build/status/sklose.disrustor?branchName=master)](https://sklose.visualstudio.com/disrustor/_build/latest?definitionId=1&branchName=master)
+
 # Disrustor
 
 This project is a port of the [LMAX Disruptor](https://lmax-exchange.github.io/disruptor/) to Rust.
