@@ -79,7 +79,7 @@ jobs:
         name: credentials
         inputs:
           secureFile: credentials
-      - script: mkdir -p ~/.cargo && cp $(credentials.secureFilePath) ~/.cargo/credentials
+      - script: mkdir -p ~/.cargo && cp $(credentials.secureFilePath) /usr/local/cargo/credentials
         displayName: Install Credentials
       - script: cargo publish --color=never
         displayName: Publish to crates.io
