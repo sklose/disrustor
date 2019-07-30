@@ -1,4 +1,4 @@
-[![Build Status](https://sklose.visualstudio.com/disrustor/_apis/build/status/sklose.disrustor?branchName=master)](https://sklose.visualstudio.com/disrustor/_build/latest?definitionId=1&branchName=master)
+[![Build Status](https://dev.azure.com/sklosegithub/disrustor/_apis/build/status/sklose.disrustor?branchName=master)](https://dev.azure.com/sklosegithub/disrustor/_build/latest?definitionId=2&branchName=master)
 
 # Disrustor
 
