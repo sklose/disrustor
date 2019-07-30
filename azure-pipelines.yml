@@ -21,14 +21,13 @@ jobs:
     steps:
       - script: rustup component add rustfmt clippy-preview
         displayName: Install
-      - script: cargo fmt -- --color=always --check
+      - script: cargo fmt -- --color=never --check
         displayName: Format
-      - script: cargo clippy --color=always --all --all-features
+      - script: cargo clippy --color=never --all --all-features
         displayName: Clippy
   
   - job: integrate
     displayName: Integrate
-    dependsOn: lint
     strategy:
       matrix:
         windows-stable:
@@ -64,3 +63,20 @@ jobs:
         displayName: Build
       - script: cargo test --all
         displayName: Test
+
+  - job: deploy
+    displayName: Deploy
+    dependsOn:
+      - lint
+      - integrate
+    pool:
+      vmImage: 'ubuntu-16.04'
+    container: rust:latest
+    steps:
+      - task: DownloadSecureFile@1
+        displayName: Download Credentials
+        name: credentials
+        inputs:
+          secureFile: credentials
+      - script: mkdir -p ~/.cargo && cp $(credentials.secureFilePath) ~/.cargo/credentials
+        displayName: Install Credentials
