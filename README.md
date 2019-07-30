@@ -1,4 +1,5 @@
 [![Build Status](https://dev.azure.com/sklosegithub/disrustor/_apis/build/status/sklose.disrustor?branchName=master)](https://dev.azure.com/sklosegithub/disrustor/_build/latest?definitionId=2&branchName=master)
+![crates.io](https://img.shields.io/crates/v/disrustor.svg)
 
 # Disrustor
 
