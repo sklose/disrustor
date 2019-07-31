@@ -32,14 +32,12 @@ impl BatchEventProcessor {
     }
 }
 
-struct Handle<B: SequenceBarrier> {
-    barrier: Arc<B>,
+struct Handle {
     thread: Option<std::thread::JoinHandle<()>>,
 }
 
-impl<B: SequenceBarrier> EventProcessorHandle for Handle<B> {
+impl EventProcessorHandle for Handle {
     fn halt(&mut self) {
-        self.barrier.alert();
         if let Some(thread) = self.thread.take() {
             thread.join().unwrap();
         }
@@ -72,8 +70,6 @@ where
         let f = self.handler;
         let cursor = self.cursor;
         let data_provider = self.data_provider;
-        let barrier = Arc::new(barrier);
-        let barrier2 = barrier.clone();
 
         let thread = std::thread::spawn(move || loop {
             let next = cursor.get() + 1;
@@ -91,7 +87,6 @@ where
         });
 
         Box::new(Handle {
-            barrier: barrier2,
             thread: Some(thread),
         })
     }
@@ -113,8 +108,6 @@ where
         let f = self.handler;
         let cursor = self.cursor;
         let data_provider = self.data_provider;
-        let barrier = Arc::new(barrier);
-        let barrier2 = barrier.clone();
 
         let thread = std::thread::spawn(move || loop {
             let next = cursor.get() + 1;
@@ -132,7 +125,6 @@ where
         });
 
         Box::new(Handle {
-            barrier: barrier2,
             thread: Some(thread),
         })
     }

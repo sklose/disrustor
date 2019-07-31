@@ -2,7 +2,10 @@ use crate::barrier::*;
 use crate::prelude::*;
 use crate::utils::*;
 use std::cell::Cell;
-use std::sync::Arc;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 
 pub struct SingleProducerSequencer<W: WaitStrategy> {
     cursor: Arc<AtomicSequence>,
@@ -11,6 +14,7 @@ pub struct SingleProducerSequencer<W: WaitStrategy> {
     wait_strategy: Arc<W>,
     gating_sequences: Vec<Arc<AtomicSequence>>,
     buffer_size: usize,
+    is_done: Arc<AtomicBool>,
 }
 
 impl<W: WaitStrategy> SingleProducerSequencer<W> {
@@ -22,6 +26,7 @@ impl<W: WaitStrategy> SingleProducerSequencer<W> {
             wait_strategy: Arc::new(wait_strategy),
             gating_sequences: Vec::new(),
             buffer_size,
+            is_done: Default::default(),
         }
     }
 }
@@ -53,7 +58,11 @@ impl<W: WaitStrategy> Sequencer for SingleProducerSequencer<W> {
         &mut self,
         gating_sequences: Vec<Arc<AtomicSequence>>,
     ) -> ProcessingSequenceBarrier<W> {
-        ProcessingSequenceBarrier::new(self.wait_strategy.clone(), gating_sequences)
+        ProcessingSequenceBarrier::new(
+            self.wait_strategy.clone(),
+            gating_sequences,
+            self.is_done.clone(),
+        )
     }
 
     fn add_gating_sequence(&mut self, gating_sequence: Arc<AtomicSequence>) {
@@ -65,10 +74,19 @@ impl<W: WaitStrategy> Sequencer for SingleProducerSequencer<W> {
         while min_cursor_sequence(&self.gating_sequences) < current {
             self.wait_strategy.signal();
         }
+        self.is_done.store(true, Ordering::SeqCst);
+        self.wait_strategy.signal();
     }
 
     fn get_cursor(&self) -> Arc<AtomicSequence> {
         self.cursor.clone()
+    }
+}
+
+impl<W: WaitStrategy> Drop for SingleProducerSequencer<W> {
+    fn drop(&mut self) {
+        self.is_done.store(true, Ordering::SeqCst);
+        self.wait_strategy.signal();
     }
 }
 

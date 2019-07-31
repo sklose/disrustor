@@ -37,7 +37,6 @@ impl From<Sequence> for AtomicSequence {
 pub trait SequenceBarrier: Send + Sync {
     fn wait_for(&self, sequence: Sequence) -> Option<Sequence>;
     fn signal(&self);
-    fn alert(&self);
 }
 
 pub trait Sequencer {

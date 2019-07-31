@@ -7,15 +7,19 @@ use std::sync::{
 pub struct ProcessingSequenceBarrier<W: WaitStrategy> {
     gating_sequences: Vec<Arc<AtomicSequence>>,
     wait_strategy: Arc<W>,
-    is_alerted: AtomicBool,
+    is_alerted: Arc<AtomicBool>,
 }
 
 impl<W: WaitStrategy> ProcessingSequenceBarrier<W> {
-    pub fn new(wait_strategy: Arc<W>, gating_sequences: Vec<Arc<AtomicSequence>>) -> Self {
+    pub fn new(
+        wait_strategy: Arc<W>,
+        gating_sequences: Vec<Arc<AtomicSequence>>,
+        is_alerted: Arc<AtomicBool>,
+    ) -> Self {
         ProcessingSequenceBarrier {
             wait_strategy,
             gating_sequences,
-            is_alerted: AtomicBool::new(false),
+            is_alerted,
         }
     }
 }
@@ -30,10 +34,5 @@ impl<W: WaitStrategy> SequenceBarrier for ProcessingSequenceBarrier<W> {
 
     fn signal(&self) {
         self.wait_strategy.signal();
-    }
-
-    fn alert(&self) {
-        self.is_alerted.store(true, Ordering::Relaxed);
-        self.signal();
     }
 }
