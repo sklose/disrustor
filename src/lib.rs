@@ -35,7 +35,10 @@ mod test {
         });
 
         sequencer.add_gating_sequence(consumer.get_cursor());
-        let mut ch = consumer.run(barrier, ring_buffer.clone());
+        let data_provider = ring_buffer.clone();
+        let t = std::thread::spawn(move || {
+            consumer.run(barrier, data_provider.as_ref());
+        });
 
         for _ in 0..10_000 {
             let buffer: Vec<_> = std::iter::repeat(1).take(1000).collect();
@@ -45,6 +48,6 @@ mod test {
         }
 
         sequencer.drain();
-        ch.halt();
+        t.join().unwrap();
     }
 }

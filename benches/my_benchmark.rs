@@ -35,7 +35,11 @@ fn disrustor_channel<W: WaitStrategy + 'static>(n: i64, b: i64) {
     });
 
     sequencer.add_gating_sequence(processor.get_cursor());
-    let mut p = processor.run(barrier, data.clone());
+
+    let data_provider = data.clone();
+    let t = std::thread::spawn(move || {
+        processor.run(barrier, data_provider.as_ref());
+    });
 
     let mut counter = 0;
     for _ in 1..=n / b {
@@ -52,7 +56,7 @@ fn disrustor_channel<W: WaitStrategy + 'static>(n: i64, b: i64) {
     }
 
     sequencer.drain();
-    p.halt();
+    t.join().unwrap();
     assert!(counter == n);
 }
 
