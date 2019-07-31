@@ -5,26 +5,22 @@ use std::sync::Arc;
 pub struct BatchEventProcessor;
 
 impl BatchEventProcessor {
-    pub fn create<D, F, T>(data_provider: Arc<D>, handler: F) -> impl EventProcessor<T>
+    pub fn create<F, T>(handler: F) -> impl EventProcessor<T>
     where
         F: Fn(&T, Sequence, bool) + Send + 'static,
-        D: DataProvider<T> + 'static,
     {
         Processor {
-            data_provider,
             handler,
             cursor: Default::default(),
             _marker: Default::default(),
         }
     }
 
-    pub fn create_mut<D, F, T>(data_provider: Arc<D>, handler: F) -> impl EventProcessor<T>
+    pub fn create_mut<F, T>(handler: F) -> impl EventProcessor<T>
     where
         F: Fn(&mut T, Sequence, bool) + Send + 'static,
-        D: DataProvider<T> + 'static,
     {
         ProcessorMut {
-            data_provider,
             handler,
             cursor: Default::default(),
             _marker: Default::default(),
@@ -44,32 +40,29 @@ impl EventProcessorHandle for Handle {
     }
 }
 
-struct Processor<D, F, T> {
-    cursor: Arc<AtomicSequence>,
-    data_provider: Arc<D>,
+struct Processor<F, T> {
     handler: F,
+    cursor: Arc<AtomicSequence>,
     _marker: PhantomData<T>,
 }
 
-struct ProcessorMut<D, F, T> {
-    cursor: Arc<AtomicSequence>,
-    data_provider: Arc<D>,
+struct ProcessorMut<F, T> {
     handler: F,
+    cursor: Arc<AtomicSequence>,
     _marker: PhantomData<T>,
 }
 
-impl<F, D, T> EventProcessor<T> for Processor<D, F, T>
+impl<F, T> EventProcessor<T> for Processor<F, T>
 where
-    D: DataProvider<T> + 'static,
     F: Fn(&T, Sequence, bool) + Send + 'static,
 {
-    fn run<B>(self, barrier: B) -> Box<dyn EventProcessorHandle>
+    fn run<B, D>(self, barrier: B, data_provider: Arc<D>) -> Box<dyn EventProcessorHandle>
     where
         B: SequenceBarrier + 'static,
+        D: DataProvider<T> + 'static,
     {
         let f = self.handler;
         let cursor = self.cursor;
-        let data_provider = self.data_provider;
 
         let thread = std::thread::spawn(move || loop {
             let next = cursor.get() + 1;
@@ -96,18 +89,17 @@ where
     }
 }
 
-impl<F, D, T> EventProcessor<T> for ProcessorMut<D, F, T>
+impl<F, T> EventProcessor<T> for ProcessorMut<F, T>
 where
-    D: DataProvider<T> + 'static,
     F: Fn(&mut T, Sequence, bool) + Send + 'static,
 {
-    fn run<B>(self, barrier: B) -> Box<dyn EventProcessorHandle>
+    fn run<B, D>(self, barrier: B, data_provider: Arc<D>) -> Box<dyn EventProcessorHandle>
     where
         B: SequenceBarrier + 'static,
+        D: DataProvider<T> + 'static,
     {
         let f = self.handler;
         let cursor = self.cursor;
-        let data_provider = self.data_provider;
 
         let thread = std::thread::spawn(move || loop {
             let next = cursor.get() + 1;

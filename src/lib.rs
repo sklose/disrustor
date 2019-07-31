@@ -26,7 +26,7 @@ mod test {
         let mut sequencer = SingleProducerSequencer::new(ring_buffer.buffer_size(), wait_strategy);
 
         let barrier = sequencer.create_barrier(vec![sequencer.get_cursor()]);
-        let consumer = BatchEventProcessor::create(ring_buffer.clone(), |data, sequence, _| {
+        let consumer = BatchEventProcessor::create(|data, sequence, _| {
             if *data != sequence {
                 dbg!(*data);
                 dbg!(sequence);
@@ -35,7 +35,7 @@ mod test {
         });
 
         sequencer.add_gating_sequence(consumer.get_cursor());
-        let mut ch = consumer.run(barrier);
+        let mut ch = consumer.run(barrier, ring_buffer.clone());
 
         for _ in 0..10_000 {
             let buffer: Vec<_> = std::iter::repeat(1).take(1000).collect();

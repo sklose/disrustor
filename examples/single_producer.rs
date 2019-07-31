@@ -11,7 +11,7 @@ fn follow_sequence<W: WaitStrategy + 'static>() {
     let mut sequencer = SingleProducerSequencer::new(data.buffer_size(), W::new());
 
     let barrier1 = sequencer.create_barrier(vec![sequencer.get_cursor()]);
-    let processor1 = BatchEventProcessor::create_mut(data.clone(), |data, sequence, _| {
+    let processor1 = BatchEventProcessor::create_mut(|data, sequence, _| {
         let val = *data;
         if val as i64 != sequence {
             panic!(
@@ -24,7 +24,7 @@ fn follow_sequence<W: WaitStrategy + 'static>() {
     });
 
     let barrier2 = sequencer.create_barrier(vec![processor1.get_cursor()]);
-    let processor2 = BatchEventProcessor::create(data.clone(), |data, sequence, _| {
+    let processor2 = BatchEventProcessor::create(|data, sequence, _| {
         let val = *data;
         if val as i64 != sequence * 2 {
             panic!(
@@ -38,8 +38,8 @@ fn follow_sequence<W: WaitStrategy + 'static>() {
     sequencer.add_gating_sequence(processor1.get_cursor());
     sequencer.add_gating_sequence(processor2.get_cursor());
 
-    let mut t1 = processor1.run(barrier1);
-    let mut t2 = processor2.run(barrier2);
+    let mut t1 = processor1.run(barrier1, data.clone());
+    let mut t2 = processor2.run(barrier2, data.clone());
 
     for i in 1..=MAX / 20 {
         let range = ((i - 1) * 20)..=((i - 1) * 20 + 19);

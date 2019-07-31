@@ -30,12 +30,12 @@ fn disrustor_channel<W: WaitStrategy + 'static>(n: i64, b: i64) {
     let mut sequencer = SingleProducerSequencer::new(data.buffer_size(), W::new());
 
     let barrier = sequencer.create_barrier(vec![sequencer.get_cursor()]);
-    let processor = BatchEventProcessor::create(data.clone(), move |data, sequence, _| {
+    let processor = BatchEventProcessor::create(move |data, sequence, _| {
         assert!(*data == sequence);
     });
 
     sequencer.add_gating_sequence(processor.get_cursor());
-    let mut p = processor.run(barrier);
+    let mut p = processor.run(barrier, data.clone());
 
     let mut counter = 0;
     for _ in 1..=n / b {

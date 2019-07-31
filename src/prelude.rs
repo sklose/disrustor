@@ -69,7 +69,10 @@ pub trait DataProvider<T>: Sync + Send {
 }
 
 pub trait EventProcessor<T> {
-    fn run<B: SequenceBarrier + 'static>(self, barrier: B) -> Box<dyn EventProcessorHandle>;
+    fn run<B, D>(self, barrier: B, data_provider: Arc<D>) -> Box<dyn EventProcessorHandle>
+    where
+        B: SequenceBarrier + 'static,
+        D: DataProvider<T> + 'static;
     fn get_cursor(&self) -> Arc<AtomicSequence>;
 }
 
