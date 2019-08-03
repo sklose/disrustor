@@ -68,7 +68,25 @@ pub trait DataProvider<T>: Sync + Send {
     unsafe fn get(&self, sequence: Sequence) -> &T;
 }
 
-pub trait EventProcessor<T> {
-    fn run<B: SequenceBarrier, D: DataProvider<T>>(self, barrier: B, data_provider: &D);
+pub trait EventProcessor<'a, T: 'a> {
+    fn prepare<B: SequenceBarrier + 'a, D: DataProvider<T> + 'a>(
+        self,
+        barrier: B,
+        data_provider: Arc<D>,
+    ) -> Box<dyn Runnable + 'a>;
     fn get_cursor(&self) -> Arc<AtomicSequence>;
+}
+
+pub trait Runnable: Send {
+    fn run(&self);
+}
+
+pub trait EventProcessorExecutor {
+    type Handle: ExecutorHandle;
+    fn with_runnables(items: Vec<Box<dyn Runnable>>) -> Self;
+    fn spawn(self) -> Self::Handle;
+}
+
+pub trait ExecutorHandle {
+    fn join(self);
 }

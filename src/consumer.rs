@@ -5,8 +5,9 @@ use std::sync::Arc;
 pub struct BatchEventProcessor;
 
 impl BatchEventProcessor {
-    pub fn create<F, T>(handler: F) -> impl EventProcessor<T>
+    pub fn create<'a, F, T>(handler: F) -> impl EventProcessor<'a, T>
     where
+        T: Send + 'a,
         F: Fn(&T, Sequence, bool) + Send + 'static,
     {
         Processor {
@@ -16,8 +17,9 @@ impl BatchEventProcessor {
         }
     }
 
-    pub fn create_mut<F, T>(handler: F) -> impl EventProcessor<T>
+    pub fn create_mut<'a, F, T>(handler: F) -> impl EventProcessor<'a, T>
     where
+        T: Send + 'a,
         F: Fn(&mut T, Sequence, bool) + Send + 'static,
     {
         ProcessorMut {
@@ -40,13 +42,78 @@ struct ProcessorMut<F, T> {
     _marker: PhantomData<T>,
 }
 
-impl<F, T> EventProcessor<T> for Processor<F, T>
+struct RunnableProcessor<F, T, D: DataProvider<T>, B: SequenceBarrier> {
+    processor: Processor<F, T>,
+    data_provider: Arc<D>,
+    barrier: B,
+}
+
+struct RunnableProcessorMut<F, T, D: DataProvider<T>, B: SequenceBarrier> {
+    processor: ProcessorMut<F, T>,
+    data_provider: Arc<D>,
+    barrier: B,
+}
+
+impl<'a, F, T> EventProcessor<'a, T> for Processor<F, T>
 where
     F: Fn(&T, Sequence, bool) + Send + 'static,
+    T: Send + 'a,
 {
-    fn run<B: SequenceBarrier, D: DataProvider<T>>(self, barrier: B, data_provider: &D) {
-        let f = self.handler;
-        let cursor = self.cursor;
+    fn prepare<B: SequenceBarrier + 'a, D: DataProvider<T> + 'a>(
+        self,
+        barrier: B,
+        data_provider: Arc<D>,
+    ) -> Box<dyn Runnable + 'a> {
+        let runnable = RunnableProcessor {
+            processor: self,
+            data_provider,
+            barrier,
+        };
+
+        Box::from(runnable)
+    }
+
+    fn get_cursor(&self) -> Arc<AtomicSequence> {
+        self.cursor.clone()
+    }
+}
+
+impl<'a, F, T> EventProcessor<'a, T> for ProcessorMut<F, T>
+where
+    F: Fn(&mut T, Sequence, bool) + Send + 'static,
+    T: Send + 'a,
+{
+    fn prepare<B: SequenceBarrier + 'a, D: DataProvider<T> + 'a>(
+        self,
+        barrier: B,
+        data_provider: Arc<D>,
+    ) -> Box<dyn Runnable + 'a> {
+        let runnable = RunnableProcessorMut {
+            processor: self,
+            data_provider,
+            barrier,
+        };
+
+        Box::from(runnable)
+    }
+
+    fn get_cursor(&self) -> Arc<AtomicSequence> {
+        self.cursor.clone()
+    }
+}
+
+impl<F, T, D, B> Runnable for RunnableProcessor<F, T, D, B>
+where
+    F: Fn(&T, Sequence, bool) + Send + 'static,
+    D: DataProvider<T>,
+    B: SequenceBarrier,
+    T: Send,
+{
+    fn run(&self) {
+        let f = &self.processor.handler;
+        let cursor = &self.processor.cursor;
+        let data_provider = &self.data_provider;
+        let barrier = &self.barrier;
 
         loop {
             let next = cursor.get() + 1;
@@ -56,44 +123,43 @@ where
             };
 
             for i in next..=available {
-                unsafe { f(data_provider.get(i), i, i == available) }
+                let value = unsafe { data_provider.get(i) };
+                f(value, i, i == available);
             }
 
             cursor.set(available);
             barrier.signal();
         }
     }
-
-    fn get_cursor(&self) -> Arc<AtomicSequence> {
-        self.cursor.clone()
-    }
 }
 
-impl<F, T> EventProcessor<T> for ProcessorMut<F, T>
+impl<F, T, D, B> Runnable for RunnableProcessorMut<F, T, D, B>
 where
     F: Fn(&mut T, Sequence, bool) + Send + 'static,
+    D: DataProvider<T>,
+    B: SequenceBarrier,
+    T: Send,
 {
-    fn run<B: SequenceBarrier, D: DataProvider<T>>(self, barrier: B, data_provider: &D) {
-        let f = self.handler;
-        let cursor = self.cursor;
+    fn run(&self) {
+        let f = &self.processor.handler;
+        let cursor = &self.processor.cursor;
+        let data_provider = &self.data_provider;
+        let barrier = &self.barrier;
 
         loop {
             let next = cursor.get() + 1;
             let available = match barrier.wait_for(next) {
                 Some(seq) => seq,
-                None => break,
+                None => return,
             };
 
             for i in next..=available {
-                unsafe { f(data_provider.get_mut(i), i, i == available) }
+                let value = unsafe { data_provider.get_mut(i) };
+                f(value, i, i == available);
             }
 
             cursor.set(available);
             barrier.signal();
         }
-    }
-
-    fn get_cursor(&self) -> Arc<AtomicSequence> {
-        self.cursor.clone()
     }
 }

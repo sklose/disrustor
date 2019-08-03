@@ -1,6 +1,8 @@
 use disrustor::prelude::*;
-use disrustor::BlockingWaitStrategy;
-use disrustor::{BatchEventProcessor, RingBuffer, SingleProducerSequencer, SpinLoopWaitStrategy};
+use disrustor::{
+    BatchEventProcessor, BlockingWaitStrategy, RingBuffer, SingleProducerSequencer,
+    SpinLoopWaitStrategy, ThreadedExecutor,
+};
 use log::*;
 use std::sync::Arc;
 
@@ -38,15 +40,12 @@ fn follow_sequence<W: WaitStrategy + 'static>() {
     sequencer.add_gating_sequence(processor1.get_cursor());
     sequencer.add_gating_sequence(processor2.get_cursor());
 
-    let dp1 = data.clone();
-    let t1 = std::thread::spawn(move || {
-        processor1.run(barrier1, dp1.as_ref());
-    });
+    let executor = ThreadedExecutor::with_runnables(vec![
+        processor1.prepare(barrier1, data.clone()),
+        processor2.prepare(barrier2, data.clone()),
+    ]);
 
-    let dp2 = data.clone();
-    let t2 = std::thread::spawn(move || {
-        processor2.run(barrier2, dp2.as_ref());
-    });
+    let handle = executor.spawn();
 
     for i in 1..=MAX / 20 {
         let range = ((i - 1) * 20)..=((i - 1) * 20 + 19);
@@ -57,8 +56,7 @@ fn follow_sequence<W: WaitStrategy + 'static>() {
     }
 
     sequencer.drain();
-    t1.join().unwrap();
-    t2.join().unwrap();
+    handle.join();
 }
 
 fn main() {

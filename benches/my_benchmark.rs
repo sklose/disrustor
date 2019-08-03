@@ -2,7 +2,7 @@ use criterion::{criterion_group, criterion_main, Criterion, ParameterizedBenchma
 use disrustor::prelude::*;
 use disrustor::{
     BatchEventProcessor, BlockingWaitStrategy, RingBuffer, SingleProducerSequencer,
-    SpinLoopWaitStrategy,
+    SpinLoopWaitStrategy, ThreadedExecutor,
 };
 use std::sync::mpsc::channel;
 use std::sync::Arc;
@@ -36,10 +36,9 @@ fn disrustor_channel<W: WaitStrategy + 'static>(n: i64, b: i64) {
 
     sequencer.add_gating_sequence(processor.get_cursor());
 
-    let data_provider = data.clone();
-    let t = std::thread::spawn(move || {
-        processor.run(barrier, data_provider.as_ref());
-    });
+    let executor = ThreadedExecutor::with_runnables(vec![processor.prepare(barrier, data.clone())]);
+
+    let handle = executor.spawn();
 
     let mut counter = 0;
     for _ in 1..=n / b {
@@ -56,7 +55,7 @@ fn disrustor_channel<W: WaitStrategy + 'static>(n: i64, b: i64) {
     }
 
     sequencer.drain();
-    t.join().unwrap();
+    handle.join();
     assert!(counter == n);
 }
 

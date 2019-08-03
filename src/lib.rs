@@ -1,5 +1,6 @@
 mod barrier;
 mod consumer;
+mod executor;
 mod producer;
 mod ringbuffer;
 mod utils;
@@ -9,6 +10,7 @@ mod wait;
 pub mod prelude;
 pub use barrier::*;
 pub use consumer::*;
+pub use executor::*;
 pub use producer::*;
 pub use ringbuffer::*;
 pub use wait::*;
@@ -36,9 +38,10 @@ mod test {
 
         sequencer.add_gating_sequence(consumer.get_cursor());
         let data_provider = ring_buffer.clone();
-        let t = std::thread::spawn(move || {
-            consumer.run(barrier, data_provider.as_ref());
-        });
+
+        let executor =
+            ThreadedExecutor::with_runnables(vec![consumer.prepare(barrier, data_provider)]);
+        let handle = executor.spawn();
 
         for _ in 0..10_000 {
             let buffer: Vec<_> = std::iter::repeat(1).take(1000).collect();
@@ -48,6 +51,6 @@ mod test {
         }
 
         sequencer.drain();
-        t.join().unwrap();
+        handle.join();
     }
 }
