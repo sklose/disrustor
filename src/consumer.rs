@@ -17,7 +17,7 @@ impl BatchEventProcessor {
         }
     }
 
-    pub fn create_mut<'a, F, T>(handler: F) -> impl EventProcessor<'a, T>
+    pub fn create_mut<'a, F, T>(handler: F) -> impl EventProcessorMut<'a, T>
     where
         T: Send + 'a,
         F: Fn(&mut T, Sequence, bool) + Send + 'static,
@@ -64,13 +64,11 @@ where
         barrier: B,
         data_provider: Arc<D>,
     ) -> Box<dyn Runnable + 'a> {
-        let runnable = RunnableProcessor {
+        Box::new(RunnableProcessor {
             processor: self,
             data_provider,
             barrier,
-        };
-
-        Box::from(runnable)
+        })
     }
 
     fn get_cursor(&self) -> Arc<AtomicSequence> {
@@ -88,18 +86,23 @@ where
         barrier: B,
         data_provider: Arc<D>,
     ) -> Box<dyn Runnable + 'a> {
-        let runnable = RunnableProcessorMut {
+        Box::new(RunnableProcessorMut {
             processor: self,
             data_provider,
             barrier,
-        };
-
-        Box::from(runnable)
+        })
     }
 
     fn get_cursor(&self) -> Arc<AtomicSequence> {
         self.cursor.clone()
     }
+}
+
+impl<'a, F, T> EventProcessorMut<'a, T> for ProcessorMut<F, T>
+where
+    F: Fn(&mut T, Sequence, bool) + Send + 'static,
+    T: Send + 'a,
+{
 }
 
 impl<F, T, D, B> Runnable for RunnableProcessor<F, T, D, B>
@@ -109,7 +112,7 @@ where
     B: SequenceBarrier,
     T: Send,
 {
-    fn run(&self) {
+    fn run(self: Box<Self>) {
         let f = &self.processor.handler;
         let cursor = &self.processor.cursor;
         let data_provider = &self.data_provider;
@@ -140,7 +143,7 @@ where
     B: SequenceBarrier,
     T: Send,
 {
-    fn run(&self) {
+    fn run(self: Box<Self>) {
         let f = &self.processor.handler;
         let cursor = &self.processor.cursor;
         let data_provider = &self.data_provider;
