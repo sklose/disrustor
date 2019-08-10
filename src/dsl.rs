@@ -3,23 +3,6 @@ use super::*;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-/*
- * let (p, h) = DisruptorBuilder::with_ring_buffer(128)
- *     .with_blocking_wait()
- *     .with_single_producer()
- *     .handle_events_with(batch_processor(||))
- *     .handle_events_with(batch_processor_mut(||))
- *     .handle_events_with_group(vec![
- *          batch_processor(||)
- *          batch_processor(||)
- *      ])
- *     .handle_events_with_pool(3, || batch_processor(||))
- *     .build();
- *
- * h.run();
- * p.produce(...);
- */
-
 #[derive(Debug)]
 pub struct DisrustorBuilder {}
 
@@ -108,12 +91,30 @@ impl<'a, S: Sequencer + 'a, W: WaitStrategy, D: DataProvider<T> + 'a, T>
         self
     }
 
-    pub fn build(mut self) -> (impl EventProcessorExecutor<'a>, S) {
+    pub fn build(
+        mut self,
+    ) -> (
+        impl EventProcessorExecutor<'a>,
+        impl EventProducer<'a, Item = T>,
+    ) {
+        self.build_with_executor::<ThreadedExecutor<'a>>()
+    }
+
+    pub fn build_with_executor<E: EventProcessorExecutor<'a>>(
+        mut self,
+    ) -> (E, impl EventProducer<'a, Item = T>) {
         let gating_sequences = std::mem::replace(&mut self.next_cursors, Vec::new());
         for gs in gating_sequences.into_iter() {
             self.sequencer.add_gating_sequence(gs);
         }
-        let executor = ThreadedExecutor::with_runnables(self.event_handlers);
-        (executor, self.sequencer)
+        let executor = E::with_runnables(self.event_handlers);
+        let producer = Producer::new(
+            self.with_wait_strategy
+                .with_data_provider
+                .data_provider
+                .clone(),
+            self.sequencer,
+        );
+        (executor, producer)
     }
 }

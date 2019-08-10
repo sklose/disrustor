@@ -7,6 +7,12 @@ use std::sync::{
     Arc,
 };
 
+pub struct Producer<D: DataProvider<T>, T, S: Sequencer> {
+    sequencer: S,
+    data_provider: Arc<D>,
+    _element: std::marker::PhantomData<T>,
+}
+
 pub struct SingleProducerSequencer<W: WaitStrategy> {
     cursor: Arc<AtomicSequence>,
     next_write_sequence: Cell<Sequence>,
@@ -69,6 +75,10 @@ impl<W: WaitStrategy> Sequencer for SingleProducerSequencer<W> {
         self.gating_sequences.push(gating_sequence);
     }
 
+    fn get_cursor(&self) -> Arc<AtomicSequence> {
+        self.cursor.clone()
+    }
+
     fn drain(self) {
         let current = self.next_write_sequence.take() - 1;
         while min_cursor_sequence(&self.gating_sequences) < current {
@@ -76,10 +86,6 @@ impl<W: WaitStrategy> Sequencer for SingleProducerSequencer<W> {
         }
         self.is_done.store(true, Ordering::SeqCst);
         self.wait_strategy.signal();
-    }
-
-    fn get_cursor(&self) -> Arc<AtomicSequence> {
-        self.cursor.clone()
     }
 }
 
@@ -90,21 +96,37 @@ impl<W: WaitStrategy> Drop for SingleProducerSequencer<W> {
     }
 }
 
-impl<W: WaitStrategy> SingleProducerSequencer<W> {
-    pub fn write<F, T, U, D, I, E>(&self, target: &D, items: I, f: F)
+impl<'a, D: DataProvider<T> + 'a, T, S: Sequencer + 'a> EventProducer<'a> for Producer<D, T, S> {
+    type Item = T;
+
+    fn write<F, U, I, E>(&self, items: I, f: F)
     where
         D: DataProvider<T>,
         I: IntoIterator<Item = U, IntoIter = E>,
         E: ExactSizeIterator<Item = U>,
-        F: Fn(&mut T, Sequence, &U),
+        F: Fn(&mut Self::Item, Sequence, &U),
     {
         let iter = items.into_iter();
-        let (start, end) = self.next(iter.len());
+        let (start, end) = self.sequencer.next(iter.len());
         for (idx, item) in iter.enumerate() {
             let seq = start + idx as Sequence;
-            let slot = unsafe { target.get_mut(seq) };
+            let slot = unsafe { self.data_provider.get_mut(seq) };
             f(slot, seq, &item);
         }
-        self.publish(end);
+        self.sequencer.publish(end);
+    }
+
+    fn drain(self) {
+        self.sequencer.drain()
+    }
+}
+
+impl<D: DataProvider<T>, T, S: Sequencer> Producer<D, T, S> {
+    pub fn new(data_provider: Arc<D>, sequencer: S) -> Self {
+        Producer {
+            data_provider,
+            sequencer,
+            _element: Default::default(),
+        }
     }
 }

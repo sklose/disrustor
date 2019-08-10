@@ -92,3 +92,15 @@ pub trait EventProcessorExecutor<'a> {
 pub trait ExecutorHandle {
     fn join(self);
 }
+
+pub trait EventProducer<'a> {
+    type Item;
+
+    fn write<F, U, I, E>(&self, items: I, f: F)
+    where
+        I: IntoIterator<Item = U, IntoIter = E>,
+        E: ExactSizeIterator<Item = U>,
+        F: Fn(&mut Self::Item, Sequence, &U);
+
+    fn drain(self);
+}

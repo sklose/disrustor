@@ -1,6 +1,6 @@
 use disrustor::prelude::*;
 use disrustor::{
-    BatchEventProcessor, BlockingWaitStrategy, RingBuffer, SingleProducerSequencer,
+    BatchEventProcessor, BlockingWaitStrategy, Producer, RingBuffer, SingleProducerSequencer,
     SpinLoopWaitStrategy, ThreadedExecutor,
 };
 use log::*;
@@ -39,6 +39,7 @@ fn follow_sequence<W: WaitStrategy + 'static>() {
 
     sequencer.add_gating_sequence(processor1.get_cursor());
     sequencer.add_gating_sequence(processor2.get_cursor());
+    let producer = Producer::new(data.clone(), sequencer);
 
     let executor = ThreadedExecutor::with_runnables(vec![
         processor1.prepare(barrier1, data.clone()),
@@ -50,12 +51,12 @@ fn follow_sequence<W: WaitStrategy + 'static>() {
     for i in 1..=MAX / 20 {
         let range = ((i - 1) * 20)..=((i - 1) * 20 + 19);
         let items: Vec<_> = range.collect();
-        sequencer.write(data.as_ref(), items, |d, _, v| {
+        producer.write(items, |d, _, v| {
             *d = *v as u32;
         });
     }
 
-    sequencer.drain();
+    producer.drain();
     handle.join();
 }
 
