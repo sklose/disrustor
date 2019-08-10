@@ -74,9 +74,23 @@ impl<W: WaitStrategy, D: DataProvider<T>, T> WithWaitStrategy<W, D, T> {
     }
 }
 
-impl<'a, S: Sequencer + 'a, W: WaitStrategy, D: DataProvider<T> + 'a, T>
+impl<'a, S: Sequencer + 'a, W: WaitStrategy, D: DataProvider<T> + 'a, T: Send + 'a>
     WithSequencer<'a, S, W, D, T>
 {
+    pub fn handle_events<F>(mut self, handler: F) -> Self
+    where
+        F: Fn(&T, Sequence, bool) + Send + 'static,
+    {
+        self.handle_events_with(BatchEventProcessor::create(handler))
+    }
+
+    pub fn handle_events_mut<F>(mut self, handler: F) -> Self
+    where
+        F: Fn(&mut T, Sequence, bool) + Send + 'static,
+    {
+        self.handle_events_with(BatchEventProcessor::create_mut(handler))
+    }
+
     pub fn handle_events_with<E: EventProcessorMut<'a, T>>(mut self, processor: E) -> Self {
         let barrier = self.sequencer.create_barrier(self.next_cursors);
         self.next_cursors = vec![processor.get_cursor()];

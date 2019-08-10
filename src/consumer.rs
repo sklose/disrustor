@@ -54,7 +54,7 @@ struct RunnableProcessorMut<F, T, D: DataProvider<T>, B: SequenceBarrier> {
     barrier: B,
 }
 
-impl<'a, F, T> EventProcessor<'a, T> for Processor<F, T>
+impl<'a, F, T> EventProcessorMut<'a, T> for Processor<F, T>
 where
     F: Fn(&T, Sequence, bool) + Send + 'static,
     T: Send + 'a,
@@ -76,7 +76,7 @@ where
     }
 }
 
-impl<'a, F, T> EventProcessor<'a, T> for ProcessorMut<F, T>
+impl<'a, F, T> EventProcessorMut<'a, T> for ProcessorMut<F, T>
 where
     F: Fn(&mut T, Sequence, bool) + Send + 'static,
     T: Send + 'a,
@@ -98,9 +98,9 @@ where
     }
 }
 
-impl<'a, F, T> EventProcessorMut<'a, T> for ProcessorMut<F, T>
+impl<'a, F, T> EventProcessor<'a, T> for Processor<F, T>
 where
-    F: Fn(&mut T, Sequence, bool) + Send + 'static,
+    F: Fn(&T, Sequence, bool) + Send + 'static,
     T: Send + 'a,
 {
 }

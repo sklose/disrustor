@@ -68,7 +68,7 @@ pub trait DataProvider<T>: Sync + Send {
     unsafe fn get(&self, sequence: Sequence) -> &T;
 }
 
-pub trait EventProcessor<'a, T> {
+pub trait EventProcessorMut<'a, T> {
     fn prepare<B: SequenceBarrier + 'a, D: DataProvider<T> + 'a>(
         self,
         barrier: B,
@@ -77,7 +77,7 @@ pub trait EventProcessor<'a, T> {
     fn get_cursor(&self) -> Arc<AtomicSequence>;
 }
 
-pub trait EventProcessorMut<'a, T>: EventProcessor<'a, T> {}
+pub trait EventProcessor<'a, T>: EventProcessorMut<'a, T> {}
 
 pub trait Runnable: Send {
     fn run(self: Box<Self>);
