@@ -1,6 +1,4 @@
-use crate::barrier::*;
-use crate::prelude::*;
-use crate::utils::*;
+use crate::{barrier::*, prelude::*, utils::*};
 use std::cell::Cell;
 use std::sync::{
     atomic::{AtomicBool, Ordering},

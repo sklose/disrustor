@@ -1,9 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion, ParameterizedBenchmark, Throughput};
-use disrustor::prelude::*;
-use disrustor::{
-    BatchEventProcessor, BlockingWaitStrategy, RingBuffer, SingleProducerSequencer,
-    SpinLoopWaitStrategy, ThreadedExecutor,
-};
+use disrustor::{internal::*, *};
 use std::sync::mpsc::channel;
 use std::sync::Arc;
 

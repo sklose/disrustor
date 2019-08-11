@@ -2,22 +2,26 @@ mod barrier;
 mod consumer;
 mod dsl;
 mod executor;
+mod prelude;
 mod producer;
 mod ringbuffer;
 mod utils;
 mod wait;
 
-pub mod prelude;
-pub use barrier::*;
-pub use consumer::*;
-pub use executor::*;
-pub use producer::*;
-pub use ringbuffer::*;
-pub use wait::*;
+pub use dsl::*;
+pub use prelude::*;
+pub mod internal {
+    pub use super::barrier::*;
+    pub use super::consumer::*;
+    pub use super::executor::*;
+    pub use super::producer::*;
+    pub use super::ringbuffer::*;
+    pub use super::wait::*;
+}
 
 #[cfg(test)]
 mod test {
-    use super::prelude::*;
+    use super::internal::*;
     use super::*;
     use std::sync::Arc;
 

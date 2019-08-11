@@ -1,7 +1,5 @@
-use super::prelude::*;
-use super::*;
-use std::marker::PhantomData;
-use std::sync::Arc;
+use crate::{consumer::*, executor::*, prelude::*, producer::*, ringbuffer::*, wait::*};
+use std::{marker::PhantomData, sync::Arc};
 
 #[derive(Debug)]
 pub struct DisrustorBuilder {}
@@ -77,14 +75,14 @@ impl<W: WaitStrategy, D: DataProvider<T>, T> WithWaitStrategy<W, D, T> {
 impl<'a, S: Sequencer + 'a, W: WaitStrategy, D: DataProvider<T> + 'a, T: Send + 'a>
     WithSequencer<'a, S, W, D, T>
 {
-    pub fn handle_events<F>(mut self, handler: F) -> Self
+    pub fn handle_events<F>(self, handler: F) -> Self
     where
         F: Fn(&T, Sequence, bool) + Send + 'static,
     {
         self.handle_events_with(BatchEventProcessor::create(handler))
     }
 
-    pub fn handle_events_mut<F>(mut self, handler: F) -> Self
+    pub fn handle_events_mut<F>(self, handler: F) -> Self
     where
         F: Fn(&mut T, Sequence, bool) + Send + 'static,
     {
@@ -106,7 +104,7 @@ impl<'a, S: Sequencer + 'a, W: WaitStrategy, D: DataProvider<T> + 'a, T: Send + 
     }
 
     pub fn build(
-        mut self,
+        self,
     ) -> (
         impl EventProcessorExecutor<'a>,
         impl EventProducer<'a, Item = T>,
