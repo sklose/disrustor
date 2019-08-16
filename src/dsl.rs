@@ -151,6 +151,27 @@ impl<'a, S: Sequencer + 'a, D: DataProvider<T> + 'a, T: Send + 'a> BarrierScope<
 impl<'a, S: Sequencer + 'a, W: WaitStrategy, D: DataProvider<T> + 'a, T: Send + 'a>
     WithEventHandlers<'a, S, W, D, T>
 {
+    pub fn with_barrier(
+        mut self,
+        f: impl FnOnce(&mut BarrierScope<'a, S, D, T>),
+    ) -> Self {
+        let mut scope = BarrierScope {
+            gating_sequences: self.gating_sequences.clone(),
+            cursors: Vec::new(),
+            sequencer: self.with_sequencer.sequencer,
+            data_provider: self.with_sequencer.with_wait_strategy.with_data_provider.data_provider.clone(),
+            event_handlers: Vec::new(),
+            _element: Default::default(),
+        };
+
+        f(&mut scope);
+        self.with_sequencer.sequencer = scope.sequencer;
+        self.event_handlers.append(&mut scope.event_handlers);
+        self.gating_sequences = scope.cursors;
+
+        self
+    }
+
     pub fn build(
         self,
     ) -> (
