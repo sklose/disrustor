@@ -1,20 +1,6 @@
 use crate::{consumer::*, executor::*, prelude::*, producer::*, ringbuffer::*, wait::*};
 use std::{marker::PhantomData, sync::Arc};
 
-/*
-* dsl::DisrustorBuilder::new(ring_buffer.clone())
-           .with_blocking_wait()
-           .with_single_producer()
-           .with_barrier(|b| {
-               b.handle_events_mut(|data, sequence, _| { })
-               b.handle_events_mut(|data, sequence, _| { })
-               b.with_barrier(|b| {
-
-               })
-           })
-           .build();
-*/
-
 #[derive(Debug)]
 pub struct DisrustorBuilder {}
 
@@ -119,7 +105,7 @@ impl<'a, S: Sequencer + 'a, W: WaitStrategy, D: DataProvider<T> + 'a, T: Send + 
         WithEventHandlers {
             with_sequencer: self,
             event_handlers: scope.event_handlers,
-            gating_sequences: scope.gating_sequences,
+            gating_sequences: scope.cursors,
         }
     }
 }
@@ -143,9 +129,8 @@ impl<'a, S: Sequencer + 'a, D: DataProvider<T> + 'a, T: Send + 'a> BarrierScope<
         self.cursors.push(processor.get_cursor());
         let barrier = self.sequencer.create_barrier(self.gating_sequences.clone());
 
-        let runable = processor.prepare(barrier, self.data_provider.clone());
-
-        self.event_handlers.push(runable);
+        let runnable = processor.prepare(barrier, self.data_provider.clone());
+        self.event_handlers.push(runnable);
     }
 
     pub fn with_barrier(mut self, f: &Fn(&mut BarrierScope<S, D, T>)) {
