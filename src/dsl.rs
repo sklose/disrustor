@@ -1,6 +1,20 @@
 use crate::{consumer::*, executor::*, prelude::*, producer::*, ringbuffer::*, wait::*};
 use std::{marker::PhantomData, sync::Arc};
 
+/*
+* dsl::DisrustorBuilder::new(ring_buffer.clone())
+           .with_blocking_wait()
+           .with_single_producer()
+           .with_barrier(|b| {
+               b.handle_events_mut(|data, sequence, _| { })
+               b.handle_events_mut(|data, sequence, _| { })
+               b.with_barrier(|b| {
+
+               })
+           })
+           .build();
+*/
+
 #[derive(Debug)]
 pub struct DisrustorBuilder {}
 
@@ -14,11 +28,24 @@ pub struct WithWaitStrategy<W: WaitStrategy, D: DataProvider<T>, T> {
     _wait_strategy: PhantomData<W>,
 }
 
-pub struct WithSequencer<'a, S: Sequencer + 'a, W: WaitStrategy, D: DataProvider<T> + 'a, T> {
+pub struct WithSequencer<S: Sequencer, W: WaitStrategy, D: DataProvider<T>, T> {
     with_wait_strategy: WithWaitStrategy<W, D, T>,
     sequencer: S,
+}
+
+pub struct BarrierScope<'a, S: Sequencer, D: DataProvider<T>, T> {
+    sequencer: S,
+    data_provider: Arc<D>,
+    gating_sequences: Vec<Arc<AtomicSequence>>,
+    cursors: Vec<Arc<AtomicSequence>>,
     event_handlers: Vec<Box<dyn Runnable + 'a>>,
-    next_cursors: Vec<Arc<AtomicSequence>>,
+    _element: PhantomData<T>,
+}
+
+pub struct WithEventHandlers<'a, S: Sequencer, W: WaitStrategy, D: DataProvider<T>, T> {
+    with_sequencer: WithSequencer<S, W, D, T>,
+    event_handlers: Vec<Box<dyn Runnable + 'a>>,
+    gating_sequences: Vec<Arc<AtomicSequence>>,
 }
 
 impl DisrustorBuilder {
@@ -52,57 +79,93 @@ impl<D: DataProvider<T>, T> WithDataProvider<D, T> {
 }
 
 impl<W: WaitStrategy, D: DataProvider<T>, T> WithWaitStrategy<W, D, T> {
-    pub fn with_sequencer<'a, S: Sequencer + 'a>(
-        self,
-        sequencer: S,
-    ) -> WithSequencer<'a, S, W, D, T> {
+    pub fn with_sequencer<S: Sequencer>(self, sequencer: S) -> WithSequencer<S, W, D, T> {
         WithSequencer {
             with_wait_strategy: self,
-            event_handlers: Vec::new(),
-            next_cursors: vec![sequencer.get_cursor()],
             sequencer,
         }
     }
 
-    pub fn with_single_producer<'a>(
-        self,
-    ) -> WithSequencer<'a, SingleProducerSequencer<W>, W, D, T> {
+    pub fn with_single_producer<'a>(self) -> WithSequencer<SingleProducerSequencer<W>, W, D, T> {
         let buffer_size = self.with_data_provider.data_provider.buffer_size();
         self.with_sequencer(SingleProducerSequencer::new(buffer_size, W::new()))
     }
 }
 
 impl<'a, S: Sequencer + 'a, W: WaitStrategy, D: DataProvider<T> + 'a, T: Send + 'a>
-    WithSequencer<'a, S, W, D, T>
+    WithSequencer<S, W, D, T>
 {
-    pub fn handle_events<F>(self, handler: F) -> Self
+    pub fn with_barrier(
+        mut self,
+        f: impl FnOnce(&mut BarrierScope<'a, S, D, T>),
+    ) -> WithEventHandlers<'a, S, W, D, T> {
+        let cursor = self.sequencer.get_cursor();
+        let mut scope = BarrierScope {
+            sequencer: self.sequencer,
+            data_provider: self
+                .with_wait_strategy
+                .with_data_provider
+                .data_provider
+                .clone(),
+            gating_sequences: vec![cursor],
+            event_handlers: Vec::new(),
+            cursors: Vec::new(),
+            _element: Default::default(),
+        };
+
+        f(&mut scope);
+        self.sequencer = scope.sequencer;
+
+        WithEventHandlers {
+            with_sequencer: self,
+            event_handlers: scope.event_handlers,
+            gating_sequences: scope.gating_sequences,
+        }
+    }
+}
+
+impl<'a, S: Sequencer + 'a, D: DataProvider<T> + 'a, T: Send + 'a> BarrierScope<'a, S, D, T> {
+    pub fn handle_events<F>(&mut self, handler: F)
     where
         F: Fn(&T, Sequence, bool) + Send + 'static,
     {
         self.handle_events_with(BatchEventProcessor::create(handler))
     }
 
-    pub fn handle_events_mut<F>(self, handler: F) -> Self
+    pub fn handle_events_mut<F>(&mut self, handler: F)
     where
         F: Fn(&mut T, Sequence, bool) + Send + 'static,
     {
         self.handle_events_with(BatchEventProcessor::create_mut(handler))
     }
 
-    pub fn handle_events_with<E: EventProcessorMut<'a, T>>(mut self, processor: E) -> Self {
-        let barrier = self.sequencer.create_barrier(self.next_cursors);
-        self.next_cursors = vec![processor.get_cursor()];
-        let runable = processor.prepare(
-            barrier,
-            self.with_wait_strategy
-                .with_data_provider
-                .data_provider
-                .clone(),
-        );
+    pub fn handle_events_with<E: EventProcessorMut<'a, T>>(&mut self, processor: E) {
+        self.cursors.push(processor.get_cursor());
+        let barrier = self.sequencer.create_barrier(self.gating_sequences.clone());
+
+        let runable = processor.prepare(barrier, self.data_provider.clone());
+
         self.event_handlers.push(runable);
-        self
     }
 
+    pub fn with_barrier(mut self, f: &Fn(&mut BarrierScope<S, D, T>)) {
+        let mut scope = BarrierScope {
+            sequencer: self.sequencer,
+            data_provider: self.data_provider.clone(),
+            gating_sequences: self.cursors,
+            event_handlers: Vec::new(),
+            cursors: Vec::new(),
+            _element: Default::default(),
+        };
+
+        f(&mut scope);
+        self.event_handlers.append(&mut scope.event_handlers);
+    }
+}
+
+impl<'a, S: Sequencer + 'a, W: WaitStrategy, D: DataProvider<T> + 'a, T: Send + 'a>
+    WithEventHandlers<'a, S, W, D, T>
+{
     pub fn build(
         self,
     ) -> (
@@ -115,17 +178,18 @@ impl<'a, S: Sequencer + 'a, W: WaitStrategy, D: DataProvider<T> + 'a, T: Send + 
     pub fn build_with_executor<E: EventProcessorExecutor<'a>>(
         mut self,
     ) -> (E, impl EventProducer<'a, Item = T>) {
-        let gating_sequences = std::mem::replace(&mut self.next_cursors, Vec::new());
+        let gating_sequences = std::mem::replace(&mut self.gating_sequences, Vec::new());
         for gs in gating_sequences.into_iter() {
-            self.sequencer.add_gating_sequence(gs);
+            self.with_sequencer.sequencer.add_gating_sequence(gs);
         }
         let executor = E::with_runnables(self.event_handlers);
         let producer = Producer::new(
-            self.with_wait_strategy
+            self.with_sequencer
+                .with_wait_strategy
                 .with_data_provider
                 .data_provider
                 .clone(),
-            self.sequencer,
+            self.with_sequencer.sequencer,
         );
         (executor, producer)
     }

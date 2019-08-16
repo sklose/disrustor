@@ -65,12 +65,14 @@ mod test {
         let (executor, producer) = dsl::DisrustorBuilder::new(ring_buffer.clone())
             .with_blocking_wait()
             .with_single_producer()
-            .handle_events_mut(|data, sequence, _| {
-                if *data != sequence {
-                    dbg!(*data);
-                    dbg!(sequence);
-                    panic!();
-                }
+            .with_barrier(|b| {
+                b.handle_events_mut(|data, sequence, _| {
+                    if *data != sequence {
+                        dbg!(*data);
+                        dbg!(sequence);
+                        panic!();
+                    }
+                });
             })
             .build();
 
