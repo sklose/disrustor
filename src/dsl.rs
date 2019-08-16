@@ -37,7 +37,7 @@ pub struct WithEventHandlers<'a, S: Sequencer, W: WaitStrategy, D: DataProvider<
 impl DisrustorBuilder {
     pub fn new<D: DataProvider<T>, T>(data_provider: Arc<D>) -> WithDataProvider<D, T> {
         WithDataProvider {
-            data_provider: data_provider,
+            data_provider,
             _element: Default::default(),
         }
     }
@@ -72,7 +72,7 @@ impl<W: WaitStrategy, D: DataProvider<T>, T> WithWaitStrategy<W, D, T> {
         }
     }
 
-    pub fn with_single_producer<'a>(self) -> WithSequencer<SingleProducerSequencer<W>, W, D, T> {
+    pub fn with_single_producer(self) -> WithSequencer<SingleProducerSequencer<W>, W, D, T> {
         let buffer_size = self.with_data_provider.data_provider.buffer_size();
         self.with_sequencer(SingleProducerSequencer::new(buffer_size, W::new()))
     }
@@ -133,7 +133,7 @@ impl<'a, S: Sequencer + 'a, D: DataProvider<T> + 'a, T: Send + 'a> BarrierScope<
         self.event_handlers.push(runnable);
     }
 
-    pub fn with_barrier(mut self, f: &Fn(&mut BarrierScope<S, D, T>)) {
+    pub fn with_barrier(mut self, f: impl FnOnce(&mut BarrierScope<'a, S, D, T>)) {
         let mut scope = BarrierScope {
             sequencer: self.sequencer,
             data_provider: self.data_provider.clone(),
@@ -151,15 +151,17 @@ impl<'a, S: Sequencer + 'a, D: DataProvider<T> + 'a, T: Send + 'a> BarrierScope<
 impl<'a, S: Sequencer + 'a, W: WaitStrategy, D: DataProvider<T> + 'a, T: Send + 'a>
     WithEventHandlers<'a, S, W, D, T>
 {
-    pub fn with_barrier(
-        mut self,
-        f: impl FnOnce(&mut BarrierScope<'a, S, D, T>),
-    ) -> Self {
+    pub fn with_barrier(mut self, f: impl FnOnce(&mut BarrierScope<'a, S, D, T>)) -> Self {
         let mut scope = BarrierScope {
             gating_sequences: self.gating_sequences.clone(),
             cursors: Vec::new(),
             sequencer: self.with_sequencer.sequencer,
-            data_provider: self.with_sequencer.with_wait_strategy.with_data_provider.data_provider.clone(),
+            data_provider: self
+                .with_sequencer
+                .with_wait_strategy
+                .with_data_provider
+                .data_provider
+                .clone(),
             event_handlers: Vec::new(),
             _element: Default::default(),
         };

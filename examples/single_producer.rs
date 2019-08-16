@@ -1,4 +1,7 @@
-use disrustor::{*, internal::{BlockingWaitStrategy, SpinLoopWaitStrategy}};
+use disrustor::{
+    internal::{BlockingWaitStrategy, SpinLoopWaitStrategy},
+    *,
+};
 use log::*;
 
 const MAX: i64 = 200i64;
