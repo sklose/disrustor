@@ -54,10 +54,10 @@ pub trait Sequencer {
 
 pub trait WaitStrategy: Send + Sync {
     fn new() -> Self;
-    fn wait_for<F: Fn() -> bool>(
+    fn wait_for<F: Fn() -> bool, S: AsRef<AtomicSequence>>(
         &self,
         sequence: Sequence,
-        dependencies: &[Arc<AtomicSequence>],
+        dependencies: &[S],
         check_alert: F,
     ) -> Option<Sequence>;
     fn signal(&self);
