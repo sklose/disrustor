@@ -31,7 +31,8 @@ mod test {
         let wait_strategy = BlockingWaitStrategy::new();
         let mut sequencer = SingleProducerSequencer::new(ring_buffer.buffer_size(), wait_strategy);
 
-        let barrier = sequencer.create_barrier(vec![sequencer.get_cursor()]);
+        let gating_sequences = vec![sequencer.get_cursor()];
+        let barrier = sequencer.create_barrier(&gating_sequences);
         let consumer = BatchEventProcessor::create(|data, sequence, _| {
             if *data != sequence {
                 dbg!(*data);
@@ -40,7 +41,7 @@ mod test {
             }
         });
 
-        sequencer.add_gating_sequence(consumer.get_cursor());
+        sequencer.add_gating_sequence(&consumer.get_cursor());
         let data_provider = ring_buffer.clone();
         let producer = Producer::new(data_provider.clone(), sequencer);
 

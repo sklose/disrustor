@@ -46,8 +46,8 @@ pub trait Sequencer {
 
     fn next(&self, count: usize) -> (Sequence, Sequence);
     fn publish(&self, highest: Sequence);
-    fn create_barrier(&mut self, gating_sequences: Vec<Arc<AtomicSequence>>) -> Self::Barrier;
-    fn add_gating_sequence(&mut self, gating_sequence: Arc<AtomicSequence>);
+    fn create_barrier(&mut self, gating_sequences: &[Arc<AtomicSequence>]) -> Self::Barrier;
+    fn add_gating_sequence(&mut self, gating_sequence: &Arc<AtomicSequence>);
     fn get_cursor(&self) -> Arc<AtomicSequence>;
     fn drain(self);
 }

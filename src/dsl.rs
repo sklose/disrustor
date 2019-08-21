@@ -35,6 +35,7 @@ pub struct WithEventHandlers<'a, S: Sequencer, W: WaitStrategy, D: DataProvider<
 }
 
 impl DisrustorBuilder {
+    #[allow(clippy::new_ret_no_self)]
     pub fn new<D: DataProvider<T>, T>(data_provider: Arc<D>) -> WithDataProvider<D, T> {
         WithDataProvider {
             data_provider,
@@ -127,7 +128,7 @@ impl<'a, S: Sequencer + 'a, D: DataProvider<T> + 'a, T: Send + 'a> BarrierScope<
 
     pub fn handle_events_with<E: EventProcessorMut<'a, T>>(&mut self, processor: E) {
         self.cursors.push(processor.get_cursor());
-        let barrier = self.sequencer.create_barrier(self.gating_sequences.clone());
+        let barrier = self.sequencer.create_barrier(&self.gating_sequences);
 
         let runnable = processor.prepare(barrier, self.data_provider.clone());
         self.event_handlers.push(runnable);
@@ -186,8 +187,7 @@ impl<'a, S: Sequencer + 'a, W: WaitStrategy, D: DataProvider<T> + 'a, T: Send + 
     pub fn build_with_executor<E: EventProcessorExecutor<'a>>(
         mut self,
     ) -> (E, impl EventProducer<'a, Item = T>) {
-        let gating_sequences = std::mem::replace(&mut self.gating_sequences, Vec::new());
-        for gs in gating_sequences.into_iter() {
+        for gs in &self.gating_sequences {
             self.with_sequencer.sequencer.add_gating_sequence(gs);
         }
         let executor = E::with_runnables(self.event_handlers);

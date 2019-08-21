@@ -25,12 +25,13 @@ fn disrustor_channel<W: WaitStrategy + 'static>(n: i64, b: i64) {
     let data: Arc<RingBuffer<i64>> = Arc::new(RingBuffer::new(capacity));
     let mut sequencer = SingleProducerSequencer::new(data.buffer_size(), W::new());
 
-    let barrier = sequencer.create_barrier(vec![sequencer.get_cursor()]);
+    let gating_sequence = vec![sequencer.get_cursor()];
+    let barrier = sequencer.create_barrier(&gating_sequence);
     let processor = BatchEventProcessor::create(move |data, sequence, _| {
         assert!(*data == sequence);
     });
 
-    sequencer.add_gating_sequence(processor.get_cursor());
+    sequencer.add_gating_sequence(&processor.get_cursor());
 
     let executor = ThreadedExecutor::with_runnables(vec![processor.prepare(barrier, data.clone())]);
 

@@ -60,17 +60,17 @@ impl<W: WaitStrategy> Sequencer for SingleProducerSequencer<W> {
 
     fn create_barrier(
         &mut self,
-        gating_sequences: Vec<Arc<AtomicSequence>>,
+        gating_sequences: &[Arc<AtomicSequence>],
     ) -> ProcessingSequenceBarrier<W> {
         ProcessingSequenceBarrier::new(
             self.wait_strategy.clone(),
-            gating_sequences,
+            Vec::from(gating_sequences),
             self.is_done.clone(),
         )
     }
 
-    fn add_gating_sequence(&mut self, gating_sequence: Arc<AtomicSequence>) {
-        self.gating_sequences.push(gating_sequence);
+    fn add_gating_sequence(&mut self, gating_sequence: &Arc<AtomicSequence>) {
+        self.gating_sequences.push(gating_sequence.clone());
     }
 
     fn get_cursor(&self) -> Arc<AtomicSequence> {
