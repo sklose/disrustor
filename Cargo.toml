@@ -16,9 +16,9 @@ azure-devops = { project = "sklosegithub/disrustor", pipeline = "sklose.disrusto
 log = "0.4.8"
 
 [dev-dependencies]
-criterion = "0.2.11"
+criterion = "0.3.0"
 fern = "0.5.8"
-chrono = "0.4.7"
+chrono = "0.4.9"
 
 [[bench]]
 name = "my_benchmark"

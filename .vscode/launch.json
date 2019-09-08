@@ -1,0 +1,120 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'disrustor'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=disrustor"
+                ],
+                "filter": {
+                    "name": "disrustor",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'multi_producer'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=multi_producer",
+                    "--package=disrustor"
+                ],
+                "filter": {
+                    "name": "multi_producer",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'multi_producer'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=multi_producer",
+                    "--package=disrustor"
+                ],
+                "filter": {
+                    "name": "multi_producer",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'single_producer'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=single_producer",
+                    "--package=disrustor"
+                ],
+                "filter": {
+                    "name": "single_producer",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'single_producer'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=single_producer",
+                    "--package=disrustor"
+                ],
+                "filter": {
+                    "name": "single_producer",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug benchmark 'my_benchmark'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bench=my_benchmark",
+                    "--package=disrustor"
+                ],
+                "filter": {
+                    "name": "my_benchmark",
+                    "kind": "bench"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

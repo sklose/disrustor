@@ -19,6 +19,12 @@ impl AtomicSequence {
     pub fn set(&self, value: Sequence) {
         self.offset.store(value, Ordering::Release);
     }
+
+    pub fn compare_exchange(&self, current: Sequence, new: Sequence) -> bool {
+        self.offset
+            .compare_exchange(current, new, Ordering::SeqCst, Ordering::Acquire)
+            .is_ok()
+    }
 }
 
 impl Default for AtomicSequence {
@@ -45,7 +51,7 @@ pub trait Sequencer {
     type Barrier: SequenceBarrier;
 
     fn next(&self, count: usize) -> (Sequence, Sequence);
-    fn publish(&self, highest: Sequence);
+    fn publish(&self, lo: Sequence, hi: Sequence);
     fn create_barrier(&mut self, gating_sequences: &[Arc<AtomicSequence>]) -> Self::Barrier;
     fn add_gating_sequence(&mut self, gating_sequence: &Arc<AtomicSequence>);
     fn get_cursor(&self) -> Arc<AtomicSequence>;

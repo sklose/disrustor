@@ -47,7 +47,7 @@ fn disrustor_channel<W: WaitStrategy + 'static>(n: i64, b: i64) {
                 counter += 1;
                 unsafe { *data.get_mut(sequence) = sequence };
             }
-            sequencer.publish(end);
+            sequencer.publish(start, end);
         }
     }
 
@@ -68,7 +68,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             .with_function("disrustor blocking", move |b, i| {
                 b.iter(|| disrustor_channel::<BlockingWaitStrategy>(n, *i));
             })
-            .throughput(move |_| Throughput::Elements(n as u32))
+            .throughput(move |_| Throughput::Elements(n as u64))
             .sample_size(10),
     );
 }

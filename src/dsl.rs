@@ -77,6 +77,11 @@ impl<W: WaitStrategy, D: DataProvider<T>, T> WithWaitStrategy<W, D, T> {
         let buffer_size = self.with_data_provider.data_provider.buffer_size();
         self.with_sequencer(SingleProducerSequencer::new(buffer_size, W::new()))
     }
+
+    pub fn with_multi_producer(self) -> WithSequencer<MultiProducerSequencer<W>, W, D, T> {
+        let buffer_size = self.with_data_provider.data_provider.buffer_size();
+        self.with_sequencer(MultiProducerSequencer::new(buffer_size, W::new()))
+    }
 }
 
 impl<'a, S: Sequencer + 'a, W: WaitStrategy, D: DataProvider<T> + 'a, T: Send + 'a>
