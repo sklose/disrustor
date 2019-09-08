@@ -20,10 +20,10 @@ fn mpsc_channel(n: i64) {
     t.join().unwrap();
 }
 
-fn disrustor_channel<W: WaitStrategy + 'static>(n: i64, b: i64) {
+fn disrustor_channel<S: Sequencer, F: FnOnce(&RingBuffer<i64>) -> S>(n: i64, b: i64, f: F) {
     let capacity = 65536;
     let data: Arc<RingBuffer<i64>> = Arc::new(RingBuffer::new(capacity));
-    let mut sequencer = SingleProducerSequencer::new(data.buffer_size(), W::new());
+    let mut sequencer = f(data.as_ref());
 
     let gating_sequence = vec![sequencer.get_cursor()];
     let barrier = sequencer.create_barrier(&gating_sequence);
@@ -62,11 +62,33 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench(
         "channels",
         ParameterizedBenchmark::new("mpsc", move |b, _| b.iter(|| mpsc_channel(n)), inputs)
-            .with_function("disrustor spinning", move |b, i| {
-                b.iter(|| disrustor_channel::<SpinLoopWaitStrategy>(n, *i));
+            .with_function("single disrustor spinning", move |b, i| {
+                b.iter(|| {
+                    disrustor_channel(n, *i, |d| {
+                        SingleProducerSequencer::new(d.buffer_size(), SpinLoopWaitStrategy::new())
+                    })
+                });
             })
-            .with_function("disrustor blocking", move |b, i| {
-                b.iter(|| disrustor_channel::<BlockingWaitStrategy>(n, *i));
+            .with_function("single disrustor blocking", move |b, i| {
+                b.iter(|| {
+                    disrustor_channel(n, *i, |d| {
+                        SingleProducerSequencer::new(d.buffer_size(), BlockingWaitStrategy::new())
+                    })
+                });
+            })
+            .with_function("multi disrustor spinning", move |b, i| {
+                b.iter(|| {
+                    disrustor_channel(n, *i, |d| {
+                        MultiProducerSequencer::new(d.buffer_size(), SpinLoopWaitStrategy::new())
+                    })
+                });
+            })
+            .with_function("multi disrustor blocking", move |b, i| {
+                b.iter(|| {
+                    disrustor_channel(n, *i, |d| {
+                        MultiProducerSequencer::new(d.buffer_size(), BlockingWaitStrategy::new())
+                    })
+                });
             })
             .throughput(move |_| Throughput::Elements(n as u64))
             .sample_size(10),

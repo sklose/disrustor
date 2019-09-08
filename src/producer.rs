@@ -137,7 +137,7 @@ pub struct MultiProducerSequencer<W: WaitStrategy> {
     gating_sequences: Vec<Arc<AtomicSequence>>,
     buffer_size: usize,
     high_watermark: AtomicSequence,
-    pending_sequences: BitMap,
+    ready_sequences: BitMap,
     is_done: Arc<AtomicBool>,
 }
 
@@ -149,7 +149,7 @@ impl<W: WaitStrategy> MultiProducerSequencer<W> {
             gating_sequences: Vec::new(),
             buffer_size,
             high_watermark: AtomicSequence::default(),
-            pending_sequences: BitMap::new(buffer_size),
+            ready_sequences: BitMap::new(buffer_size),
             is_done: Default::default(),
         }
     }
@@ -169,11 +169,7 @@ impl<W: WaitStrategy> Sequencer for MultiProducerSequencer<W> {
             if self.has_capacity(high_watermark, count) {
                 let end = high_watermark + count as Sequence;
                 if self.high_watermark.compare_exchange(high_watermark, end) {
-                    let start = high_watermark + 1;
-                    for n in start..=end {
-                        self.pending_sequences.set(n);
-                    }
-                    return (start, end);
+                    return (high_watermark + 1, end);
                 }
             }
         }
@@ -181,13 +177,13 @@ impl<W: WaitStrategy> Sequencer for MultiProducerSequencer<W> {
 
     fn publish(&self, lo: Sequence, hi: Sequence) {
         for n in lo..=hi {
-            self.pending_sequences.unset(n);
+            self.ready_sequences.set(n);
         }
 
         let low_watermark = self.cursor.get() + 1;
         let mut good_to_release = low_watermark - 1;
         for n in low_watermark..=self.high_watermark.get() {
-            if !self.pending_sequences.is_set(n) {
+            if self.ready_sequences.is_set(n) {
                 good_to_release = n;
             } else {
                 break;
@@ -195,6 +191,10 @@ impl<W: WaitStrategy> Sequencer for MultiProducerSequencer<W> {
         }
 
         if good_to_release > low_watermark {
+            for n in low_watermark..=good_to_release {
+                self.ready_sequences.unset(n);
+            }
+
             let mut current = low_watermark;
             while !self.cursor.compare_exchange(current, good_to_release) {
                 current = self.cursor.get();
