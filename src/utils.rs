@@ -24,7 +24,7 @@ impl BitMap {
         fn log2(mut n: i64) -> i64 {
             let mut r = 0;
             loop {
-                n = n >> 1;
+                n >>= 1;
                 if n == 0 {
                     return r;
                 }

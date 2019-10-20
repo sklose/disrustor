@@ -13,7 +13,7 @@ fn follow_sequence<W: WaitStrategy + 'static>() {
         .with_barrier(|b| {
             b.handle_events_mut(|data, sequence, _| {
                 let val = *data;
-                if val as i64 != sequence {
+                if i64::from(val) != sequence {
                     panic!(
                         "concurrency problem detected (p1), expected {}, but got {}",
                         sequence, val
@@ -26,7 +26,7 @@ fn follow_sequence<W: WaitStrategy + 'static>() {
         .with_barrier(|b| {
             b.handle_events(|data, sequence, _| {
                 let val = *data;
-                if val as i64 != sequence * 2 {
+                if i64::from(val) != sequence * 2 {
                     panic!(
                         "concurrency problem detected (p2), expected {}, but got {}",
                         sequence * 2,
