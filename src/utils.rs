@@ -33,8 +33,11 @@ impl BitMap {
         }
 
         let word_bits = std::mem::size_of::<AtomicU64>() * 8;
+        let remainder = capacity % word_bits;
+        let len = capacity / word_bits + if remainder == 0 { 0 } else { 1 };
+        let slots = Vec::from_iter(repeat_with(AtomicU64::default).take(len));
         Self {
-            slots: Vec::from_iter(repeat_with(AtomicU64::default).take(capacity / word_bits)),
+            slots,
             index_mask: (capacity - 1) as i64,
             index_shift: log2(word_bits as i64),
             word_bits_mask: word_bits - 1,
