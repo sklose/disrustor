@@ -1,16 +1,6 @@
-use crate::lib::*;
+use crate::prelude::*;
 use std::cell::UnsafeCell;
 
-pub trait DataProvider<T>: Sync + Send {
-    fn buffer_size(&self) -> usize;
-    fn get_mut(&self, guard: &mut SequenceGuard) -> &mut T;
-    fn get(&self, guard: &SequenceGuard) -> &T;
-}
-
-/// Ring based store of reusable entries containing the data representing
-/// an event being exchanged between event producer and {@link EventProcessor}s.
-///
-/// @param <E> implementation storing the data for sharing during exchange or parallel coordination of an event.
 pub struct RingBuffer<T> {
     data: Vec<UnsafeCell<T>>,
     capacity: usize,
@@ -19,7 +9,10 @@ pub struct RingBuffer<T> {
 
 impl<T: Default> RingBuffer<T> {
     pub fn new(capacity: usize) -> Self {
-        assert!(capacity.is_power_of_two(), "capacity must be power of two");
+        assert!(
+            (capacity != 0) && ((capacity & (capacity - 1)) == 0),
+            "capacity must be power of two"
+        );
 
         let mut data = Vec::with_capacity(capacity);
         for _ in 0..capacity {
@@ -35,18 +28,16 @@ impl<T: Default> RingBuffer<T> {
 }
 
 impl<T> DataProvider<T> for RingBuffer<T> {
-    fn get_mut(&self, guard: &mut SequenceGuard) -> &mut T {
-        let sequence = i64::from(guard);
+    unsafe fn get_mut(&self, sequence: Sequence) -> &mut T {
         let index = sequence as usize & self.mask;
-        let cell = unsafe { self.data.get_unchecked(index) };
-        unsafe { &mut *cell.get() }
+        let cell = self.data.get_unchecked(index);
+        &mut *cell.get()
     }
 
-    fn get(&self, guard: &SequenceGuard) -> &T {
-        let sequence = i64::from(guard);
+    unsafe fn get(&self, sequence: Sequence) -> &T {
         let index = sequence as usize & self.mask;
-        let cell = unsafe { self.data.get_unchecked(index) };
-        unsafe { &*cell.get() }
+        let cell = self.data.get_unchecked(index);
+        &*cell.get()
     }
 
     fn buffer_size(&self) -> usize {
@@ -68,18 +59,21 @@ mod test {
         let buffer = RingBuffer::new(SIZE as usize);
 
         for i in 0..SIZE {
-            let mut guard = unsafe { SequenceGuard::new(i) };
-            *buffer.get_mut(&mut guard) = i;
+            unsafe {
+                *buffer.get_mut(i) = i;
+            }
         }
 
         for i in 0..SIZE {
-            let mut guard = unsafe { SequenceGuard::new(i) };
-            *buffer.get_mut(&mut guard) *= 2;
+            unsafe {
+                *buffer.get_mut(i) *= 2;
+            }
         }
 
         for i in 0..SIZE {
-            let mut guard = unsafe { SequenceGuard::new(i) };
-            assert_eq!(*buffer.get_mut(&mut guard), i * 2);
+            unsafe {
+                assert_eq!(*buffer.get_mut(i), i * 2);
+            }
         }
     }
 
@@ -91,8 +85,9 @@ mod test {
         let b1 = buffer.clone();
         let t1 = std::thread::spawn(move || {
             for i in 0..SIZE {
-                let mut guard = unsafe { SequenceGuard::new(i) };
-                *b1.get_mut(&mut guard) = i;
+                unsafe {
+                    *b1.get_mut(i) = i;
+                }
             }
         });
 
@@ -100,10 +95,11 @@ mod test {
         let t2 = std::thread::spawn(move || {
             std::thread::park();
             for i in 0..SIZE {
-                let mut guard = unsafe { SequenceGuard::new(i) };
-                let value = *b2.get_mut(&mut guard);
-                if value != i {
-                    panic!("cannot read what was written")
+                unsafe {
+                    let value = *b2.get_mut(i);
+                    if value != i {
+                        panic!("cannot read what was written")
+                    }
                 }
             }
         });
