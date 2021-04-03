@@ -1,6 +1,8 @@
 [![Build Status](https://dev.azure.com/sklosegithub/disrustor/_apis/build/status/sklose.disrustor?branchName=master)](https://dev.azure.com/sklosegithub/disrustor/_build/latest?definitionId=2&branchName=master)
 [![crates.io](https://img.shields.io/crates/v/disrustor.svg)](https://crates.io/crates/disrustor)
 
+# :warning: DISCLAIMER: this crate has a known security vulnerability, see https://github.com/sklose/disrustor/issues/1
+
 # Disrustor
 
 This project is a port of the [LMAX Disruptor](https://lmax-exchange.github.io/disruptor/) to Rust.
