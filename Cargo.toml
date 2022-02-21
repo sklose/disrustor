@@ -1,6 +1,6 @@
 [package]
 name = "disrustor"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2018"
 authors = ["Sebastian Klose <mail@sklose.com>"]
 description = "This project is a port of the LMAX Disruptor to Rust"
@@ -9,16 +9,14 @@ categories = ["concurrency", "data-structures"]
 repository = "https://github.com/sklose/disrustor"
 license = "MIT"
 
-[badges]
-azure-devops = { project = "sklosegithub/disrustor", pipeline = "sklose.disrustor" }
-
 [dependencies]
-log = "0.4.8"
+log = "0.4"
 
 [dev-dependencies]
-criterion = "0.3.0"
-fern = "0.5.8"
-chrono = "0.4.9"
+criterion = "0.3.5"
+fern = "0.6.0"
+chrono = "0.4.19"
+trybuild = "1.0.56"
 
 [[bench]]
 name = "my_benchmark"
