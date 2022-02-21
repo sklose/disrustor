@@ -3,7 +3,7 @@ name: CI
 
 jobs:
   build_and_test:
-    name: Rust project
+    name: Disrustor
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
