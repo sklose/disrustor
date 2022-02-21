@@ -16,18 +16,13 @@ note: required by a bound in `DisrustorBuilder::new`
 error[E0599]: the method `with_spin_wait` exists for struct `WithDataProvider<RingBuffer<Cell<RefOrInt>>, Cell<RefOrInt>>`, but its trait bounds were not satisfied
    --> tests/cve/cve_2020_36470_2.rs:32:14
     |
-32  |             .with_spin_wait()
-    |              ^^^^^^^^^^^^^^ method cannot be called on `WithDataProvider<RingBuffer<Cell<RefOrInt>>, Cell<RefOrInt>>` due to unsatisfied trait bounds
-    |
-   ::: $RUST/core/src/cell.rs
-    |
-    | pub struct Cell<T: ?Sized> {
-    | -------------------------- doesn't satisfy `Cell<RefOrInt>: Sync`
+32  |               .with_spin_wait()
+    |                ^^^^^^^^^^^^^^ method cannot be called on `WithDataProvider<RingBuffer<Cell<RefOrInt>>, Cell<RefOrInt>>` due to unsatisfied trait bounds
     |
    ::: src/ringbuffer.rs
     |
-    | pub struct RingBuffer<T> {
-    | ------------------------ doesn't satisfy `_: DataProvider<Cell<RefOrInt>>`
+    |   pub struct RingBuffer<T> {
+    |   ------------------------ doesn't satisfy `_: DataProvider<Cell<RefOrInt>>`
     |
     = note: the following trait bounds were not satisfied:
             `RingBuffer<Cell<RefOrInt>>: DataProvider<Cell<RefOrInt>>`
@@ -64,18 +59,13 @@ note: required by a bound in `DisrustorBuilder::new`
 error[E0599]: the method `with_spin_wait` exists for struct `WithDataProvider<RingBuffer<Cell<RefOrInt>>, Cell<RefOrInt>>`, but its trait bounds were not satisfied
    --> tests/cve/cve_2020_36470_2.rs:45:10
     |
-45  |         .with_spin_wait()
-    |          ^^^^^^^^^^^^^^ method cannot be called on `WithDataProvider<RingBuffer<Cell<RefOrInt>>, Cell<RefOrInt>>` due to unsatisfied trait bounds
-    |
-   ::: $RUST/core/src/cell.rs
-    |
-    | pub struct Cell<T: ?Sized> {
-    | -------------------------- doesn't satisfy `Cell<RefOrInt>: Sync`
+45  |           .with_spin_wait()
+    |            ^^^^^^^^^^^^^^ method cannot be called on `WithDataProvider<RingBuffer<Cell<RefOrInt>>, Cell<RefOrInt>>` due to unsatisfied trait bounds
     |
    ::: src/ringbuffer.rs
     |
-    | pub struct RingBuffer<T> {
-    | ------------------------ doesn't satisfy `_: DataProvider<Cell<RefOrInt>>`
+    |   pub struct RingBuffer<T> {
+    |   ------------------------ doesn't satisfy `_: DataProvider<Cell<RefOrInt>>`
     |
     = note: the following trait bounds were not satisfied:
             `RingBuffer<Cell<RefOrInt>>: DataProvider<Cell<RefOrInt>>`

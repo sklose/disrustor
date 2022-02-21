@@ -14,7 +14,3 @@ note: required because it appears within the type `NonSend`
     = note: required because of the requirements on the impl of `Send` for `RingBuffer<NonSend>`
     = note: required because it appears within the type `[closure@$DIR/tests/cve/cve_2020_36470_1.rs:34:32: 36:6]`
 note: required by a bound in `std::thread::spawn`
-   --> $RUST/std/src/thread/mod.rs
-    |
-    |     F: Send + 'static,
-    |        ^^^^ required by this bound in `std::thread::spawn`
