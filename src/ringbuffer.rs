@@ -27,7 +27,7 @@ impl<T: Default> RingBuffer<T> {
     }
 }
 
-impl<T> DataProvider<T> for RingBuffer<T> {
+impl<T: Send + Sync> DataProvider<T> for RingBuffer<T> {
     unsafe fn get_mut(&self, sequence: Sequence) -> &mut T {
         let index = sequence as usize & self.mask;
         let cell = self.data.get_unchecked(index);
@@ -45,8 +45,8 @@ impl<T> DataProvider<T> for RingBuffer<T> {
     }
 }
 
-unsafe impl<T> Send for RingBuffer<T> {}
-unsafe impl<T> Sync for RingBuffer<T> {}
+unsafe impl<T: Send> Send for RingBuffer<T> {}
+unsafe impl<T: Sync> Sync for RingBuffer<T> {}
 
 #[cfg(test)]
 mod test {
