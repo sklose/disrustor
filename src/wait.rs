@@ -58,13 +58,14 @@ impl WaitStrategy for BlockingWaitStrategy {
             if available >= sequence {
                 return Some(available);
             } else {
-                let _ = self.cvar.wait(blocked).unwrap();
+                let _guard = self.cvar.wait(blocked).unwrap();
             }
         }
     }
 
     fn signal(&self) {
-        let _ = self.guard.lock().unwrap();
+        let _guard = self.guard.lock().unwrap();
         self.cvar.notify_all();
+        drop(_guard);
     }
 }

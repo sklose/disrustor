@@ -36,7 +36,7 @@ impl ExecutorHandle for ThreadedExecutorHandle {
 
 impl Drop for ThreadedExecutorHandle {
     fn drop(&mut self) {
-        let threads = std::mem::replace(&mut self.threads, Vec::new());
+        let threads = std::mem::take(&mut self.threads);
         for t in threads.into_iter() {
             t.join().unwrap();
         }

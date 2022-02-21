@@ -69,9 +69,10 @@ pub trait WaitStrategy: Send + Sync {
     fn signal(&self);
 }
 
+#[allow(clippy::mut_from_ref)]
+#[allow(clippy::missing_safety_doc)]
 pub trait DataProvider<T>: Sync + Send {
     fn buffer_size(&self) -> usize;
-    #[allow(clippy::mut_from_ref)]
     unsafe fn get_mut(&self, sequence: Sequence) -> &mut T;
     unsafe fn get(&self, sequence: Sequence) -> &T;
 }
