@@ -1,7 +1,5 @@
-[![Build Status](https://dev.azure.com/sklosegithub/disrustor/_apis/build/status/sklose.disrustor?branchName=master)](https://dev.azure.com/sklosegithub/disrustor/_build/latest?definitionId=2&branchName=master)
+[![CI](https://github.com/sklose/disrustor/actions/workflows/build.yaml/badge.svg)](https://github.com/sklose/disrustor/actions/workflows/build.yaml)
 [![crates.io](https://img.shields.io/crates/v/disrustor.svg)](https://crates.io/crates/disrustor)
-
-# :warning: DISCLAIMER: this crate has a known security vulnerability, see https://github.com/sklose/disrustor/issues/1
 
 # Disrustor
 
