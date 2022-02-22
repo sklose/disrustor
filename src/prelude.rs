@@ -5,9 +5,17 @@ use std::sync::{
 
 pub type Sequence = i64;
 
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+const CACHE_LINE_SIZE: usize = 128;
+
+#[cfg(target_arch = "x86_64")]
+const CACHE_LINE_SIZE: usize = 64;
+
+const CACHE_LINE_PADDING: usize = CACHE_LINE_SIZE - std::mem::size_of::<AtomicI64>();
+
 #[repr(align(64))]
 pub struct AtomicSequence {
-    _pad: [u8; 56],
+    _pad: [u8; CACHE_LINE_PADDING],
     offset: AtomicI64,
 }
 
@@ -37,7 +45,7 @@ impl From<Sequence> for AtomicSequence {
     fn from(offset: Sequence) -> Self {
         AtomicSequence {
             offset: AtomicI64::new(offset),
-            _pad: [0u8; 56],
+            _pad: [0u8; CACHE_LINE_PADDING],
         }
     }
 }

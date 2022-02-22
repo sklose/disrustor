@@ -19,5 +19,5 @@ chrono = "0.4.19"
 trybuild = "1.0.56"
 
 [[bench]]
-name = "my_benchmark"
+name = "u64_channels"
 harness = false
