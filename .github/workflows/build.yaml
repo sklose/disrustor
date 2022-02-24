@@ -5,11 +5,14 @@ jobs:
   build_and_test:
     name: Disrustor
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain: ["1.58.1", "stable"]
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.58.1
+          toolchain: ${{ matrix.toolchain }}
           components: clippy, rustfmt
           override: true
       - uses: actions-rs/cargo@v1
@@ -26,4 +29,6 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features
+        if: ${{ matrix.toolchain }} == '1.58.1'
       - run: cargo fmt -- --check
+        if: ${{ matrix.toolchain }} == '1.58.1'
