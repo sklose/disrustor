@@ -10,7 +10,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: 1.58.1
-          components: clippy rustfmt
+          components: clippy, rustfmt
           override: true
       - uses: actions-rs/cargo@v1
         with:
