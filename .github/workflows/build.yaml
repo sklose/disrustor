@@ -10,25 +10,26 @@ jobs:
         toolchain: ["1.58.1", "stable"]
     steps:
       - uses: actions/checkout@v2
+        name: Checkout Repo
       - uses: actions-rs/toolchain@v1
+        name: Install Rust Toolchain ${{ matrix.toolchain }}
         with:
           toolchain: ${{ matrix.toolchain }}
           components: clippy, rustfmt
           override: true
       - uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --all-features
-      - uses: actions-rs/cargo@v1
+        name: Build & Run Tests
         with:
           command: test
           args: --release --all-features
         env:
           TRYBUILD: overwrite
       - uses: actions-rs/clippy-check@v1
+        name: Clippy
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features
-        if: ${{ matrix.toolchain }} == '1.58.1'
+        if: ${{ matrix.toolchain == '1.58.1' }}
       - run: cargo fmt -- --check
-        if: ${{ matrix.toolchain }} == '1.58.1'
+        name: Lint
+        if: ${{ matrix.toolchain == '1.58.1' }}
