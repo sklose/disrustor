@@ -10,7 +10,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: 1.58.1
-          components: clippy
+          components: clippy rustfmt
           override: true
       - uses: actions-rs/cargo@v1
         with:
@@ -24,3 +24,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features
+      - uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-features
+      - run: cargo fmt -- --check

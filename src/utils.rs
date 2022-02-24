@@ -76,7 +76,7 @@ mod test {
         pub fn is_unset_by_default() {
             let bitmap = BitMap::new(100);
             for n in 0..100 {
-                assert_eq!(bitmap.is_set(n), false);
+                assert!(!bitmap.is_set(n));
             }
         }
 

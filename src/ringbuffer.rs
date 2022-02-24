@@ -91,7 +91,7 @@ mod test {
             }
         });
 
-        let b2 = buffer.clone();
+        let b2 = buffer;
         let t2 = std::thread::spawn(move || {
             std::thread::park();
             for i in 0..SIZE {

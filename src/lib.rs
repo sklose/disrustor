@@ -42,7 +42,7 @@ mod test {
         });
 
         sequencer.add_gating_sequence(&consumer.get_cursor());
-        let data_provider = ring_buffer.clone();
+        let data_provider = ring_buffer;
         let producer = Producer::new(data_provider.clone(), sequencer);
 
         let executor =
@@ -63,7 +63,7 @@ mod test {
     #[test]
     fn test_dsl() {
         let ring_buffer: Arc<RingBuffer<i64>> = Arc::new(RingBuffer::new(4096));
-        let (executor, producer) = dsl::DisrustorBuilder::new(ring_buffer.clone())
+        let (executor, producer) = dsl::DisrustorBuilder::new(ring_buffer)
             .with_blocking_wait()
             .with_single_producer()
             .with_barrier(|b| {
