@@ -20,10 +20,8 @@ jobs:
         with:
           command: test
           args: --release --all-features
-      - uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features
+        env:
+          TRYBUILD: overwrite
       - uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
