@@ -7,31 +7,38 @@ error[E0277]: `Cell<RefOrInt>` cannot be shared between threads safely
    |                                     required by a bound introduced by this call
    |
    = help: the trait `Sync` is not implemented for `Cell<RefOrInt>`
+   = help: the trait `DataProvider<T>` is implemented for `RingBuffer<T>`
+   = note: required for `RingBuffer<Cell<RefOrInt>>` to implement `DataProvider<Cell<RefOrInt>>`
 note: required by a bound in `DisrustorBuilder::new`
   --> src/dsl.rs
    |
-   |         T: Send + Sync,
-   |                   ^^^^ required by this bound in `DisrustorBuilder::new`
+   |     pub fn new<D: DataProvider<T>, T>(data_provider: Arc<D>) -> WithDataProvider<D, T>
+   |                   ^^^^^^^^^^^^^^^ required by this bound in `DisrustorBuilder::new`
 
 error[E0599]: the method `with_spin_wait` exists for struct `WithDataProvider<RingBuffer<Cell<RefOrInt>>, Cell<RefOrInt>>`, but its trait bounds were not satisfied
-   --> tests/cve/cve_2020_36470_2.rs:32:14
-    |
-32  |             .with_spin_wait()
-    |              ^^^^^^^^^^^^^^ method cannot be called on `WithDataProvider<RingBuffer<Cell<RefOrInt>>, Cell<RefOrInt>>` due to unsatisfied trait bounds
-    |
-   ::: $RUST/core/src/cell.rs
-    |
-    | pub struct Cell<T: ?Sized> {
-    | -------------------------- doesn't satisfy `Cell<RefOrInt>: Sync`
-    |
-   ::: src/ringbuffer.rs
-    |
-    | pub struct RingBuffer<T> {
-    | ------------------------ doesn't satisfy `_: DataProvider<Cell<RefOrInt>>`
-    |
-    = note: the following trait bounds were not satisfied:
-            `RingBuffer<Cell<RefOrInt>>: DataProvider<Cell<RefOrInt>>`
-            `Cell<RefOrInt>: Sync`
+  --> tests/cve/cve_2020_36470_2.rs:32:14
+   |
+32 |             .with_spin_wait()
+   |              ^^^^^^^^^^^^^^ method cannot be called due to unsatisfied trait bounds
+   |
+  ::: $RUST/core/src/cell.rs
+   |
+   | pub struct Cell<T: ?Sized> {
+   | -------------------------- doesn't satisfy `Cell<RefOrInt>: Sync`
+   |
+  ::: src/ringbuffer.rs
+   |
+   | pub struct RingBuffer<T> {
+   | ------------------------
+   | |
+   | doesn't satisfy `RingBuffer<Cell<RefOrInt>>: Sync`
+   | doesn't satisfy `_: DataProvider<Cell<RefOrInt>>`
+   |
+   = note: the following trait bounds were not satisfied:
+           `RingBuffer<Cell<RefOrInt>>: DataProvider<Cell<RefOrInt>>`
+           `RingBuffer<Cell<RefOrInt>>: Sync`
+           which is required by `RingBuffer<Cell<RefOrInt>>: DataProvider<Cell<RefOrInt>>`
+           `Cell<RefOrInt>: Sync`
 
 error[E0277]: `Cell<RefOrInt>` cannot be shared between threads safely
   --> tests/cve/cve_2020_36470_2.rs:31:37
@@ -55,31 +62,38 @@ error[E0277]: `Cell<RefOrInt>` cannot be shared between threads safely
    |                                 required by a bound introduced by this call
    |
    = help: the trait `Sync` is not implemented for `Cell<RefOrInt>`
+   = help: the trait `DataProvider<T>` is implemented for `RingBuffer<T>`
+   = note: required for `RingBuffer<Cell<RefOrInt>>` to implement `DataProvider<Cell<RefOrInt>>`
 note: required by a bound in `DisrustorBuilder::new`
   --> src/dsl.rs
    |
-   |         T: Send + Sync,
-   |                   ^^^^ required by this bound in `DisrustorBuilder::new`
+   |     pub fn new<D: DataProvider<T>, T>(data_provider: Arc<D>) -> WithDataProvider<D, T>
+   |                   ^^^^^^^^^^^^^^^ required by this bound in `DisrustorBuilder::new`
 
 error[E0599]: the method `with_spin_wait` exists for struct `WithDataProvider<RingBuffer<Cell<RefOrInt>>, Cell<RefOrInt>>`, but its trait bounds were not satisfied
-   --> tests/cve/cve_2020_36470_2.rs:45:10
-    |
-45  |         .with_spin_wait()
-    |          ^^^^^^^^^^^^^^ method cannot be called on `WithDataProvider<RingBuffer<Cell<RefOrInt>>, Cell<RefOrInt>>` due to unsatisfied trait bounds
-    |
-   ::: $RUST/core/src/cell.rs
-    |
-    | pub struct Cell<T: ?Sized> {
-    | -------------------------- doesn't satisfy `Cell<RefOrInt>: Sync`
-    |
-   ::: src/ringbuffer.rs
-    |
-    | pub struct RingBuffer<T> {
-    | ------------------------ doesn't satisfy `_: DataProvider<Cell<RefOrInt>>`
-    |
-    = note: the following trait bounds were not satisfied:
-            `RingBuffer<Cell<RefOrInt>>: DataProvider<Cell<RefOrInt>>`
-            `Cell<RefOrInt>: Sync`
+  --> tests/cve/cve_2020_36470_2.rs:45:10
+   |
+45 |         .with_spin_wait()
+   |          ^^^^^^^^^^^^^^ method cannot be called due to unsatisfied trait bounds
+   |
+  ::: $RUST/core/src/cell.rs
+   |
+   | pub struct Cell<T: ?Sized> {
+   | -------------------------- doesn't satisfy `Cell<RefOrInt>: Sync`
+   |
+  ::: src/ringbuffer.rs
+   |
+   | pub struct RingBuffer<T> {
+   | ------------------------
+   | |
+   | doesn't satisfy `RingBuffer<Cell<RefOrInt>>: Sync`
+   | doesn't satisfy `_: DataProvider<Cell<RefOrInt>>`
+   |
+   = note: the following trait bounds were not satisfied:
+           `RingBuffer<Cell<RefOrInt>>: DataProvider<Cell<RefOrInt>>`
+           `RingBuffer<Cell<RefOrInt>>: Sync`
+           which is required by `RingBuffer<Cell<RefOrInt>>: DataProvider<Cell<RefOrInt>>`
+           `Cell<RefOrInt>: Sync`
 
 error[E0277]: `Cell<RefOrInt>` cannot be shared between threads safely
   --> tests/cve/cve_2020_36470_2.rs:44:33

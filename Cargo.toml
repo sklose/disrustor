@@ -8,15 +8,16 @@ keywords = ["disruptor", "lmax"]
 categories = ["concurrency", "data-structures"]
 repository = "https://github.com/sklose/disrustor"
 license = "MIT"
+rust-version = "1.59"
 
 [dependencies]
 log = "0.4"
 
 [dev-dependencies]
-criterion = "0.3.5"
-fern = "0.6.0"
-chrono = "0.4.19"
-trybuild = "1.0.56"
+criterion = "0.4"
+fern = "0.6"
+chrono = "0.4"
+trybuild = "1"
 
 [[bench]]
 name = "u64_channels"
