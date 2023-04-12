@@ -1,5 +1,6 @@
 [![CI](https://github.com/sklose/disrustor/actions/workflows/ci.yaml/badge.svg)](https://github.com/sklose/disrustor/actions/workflows/ci.yaml)
 [![crates.io](https://img.shields.io/crates/v/disrustor.svg)](https://crates.io/crates/disrustor)
+[![codecov](https://codecov.io/gh/sklose/disrustor/branch/master/graph/badge.svg?token=UE3RML6O57)](https://codecov.io/gh/sklose/disrustor)
 
 # Disrustor
 
