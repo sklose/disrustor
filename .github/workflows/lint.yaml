@@ -13,13 +13,13 @@ jobs:
           override: true
           components: rustfmt, clippy
 
-      - name: clippy
+      - name: cargo clippy
         uses: actions-rs/cargo@v1
         with:
           command: clippy
           args: -- -D warnings
 
-      - name: rustfmt
+      - name: cargo rustfmt
         uses: actions-rs/cargo@v1
         with:
           command: fmt
