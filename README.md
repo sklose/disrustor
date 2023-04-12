@@ -1,4 +1,4 @@
-[![CI](https://github.com/sklose/disrustor/actions/workflows/build.yaml/badge.svg)](https://github.com/sklose/disrustor/actions/workflows/build.yaml)
+[![CI](https://github.com/sklose/disrustor/actions/workflows/ci.yaml/badge.svg)](https://github.com/sklose/disrustor/actions/workflows/ci.yaml)
 [![crates.io](https://img.shields.io/crates/v/disrustor.svg)](https://crates.io/crates/disrustor)
 
 # Disrustor
