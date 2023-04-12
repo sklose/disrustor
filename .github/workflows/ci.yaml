@@ -16,7 +16,7 @@ jobs:
           - toolchain: nightly
             try-build: overwrite
           - toolchain: 1.59.0 # MSRV
-            try-build: overwrite
+            try-build: wip # overwrite
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
@@ -52,6 +52,8 @@ jobs:
         with:
           command: test
           args: --locked --all-features --all-targets
+        env:
+          TRYBUILD: overwrite
 
   coverage:
     runs-on: ubuntu-latest
@@ -70,6 +72,8 @@ jobs:
         with:
           command: llvm-cov
           args: --locked --all-features --lcov --output-path lcov.info
+        env:
+          TRYBUILD: overwrite
       - name: codecov.io
         uses: codecov/codecov-action@v3
         with:
