@@ -7,16 +7,17 @@ jobs:
     runs-on: ubuntu-latest
     name: ubuntu-latest / ${{ matrix.toolchain }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - toolchain: stable
-            try-build: wip
+            try-build: overwrite # wip
           - toolchain: beta
             try-build: overwrite
           - toolchain: nightly
             try-build: overwrite
           - toolchain: 1.59.0 # MSRV
-            try-build: wip # overwrite
+            try-build: overwrite
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
