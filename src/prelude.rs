@@ -1,6 +1,9 @@
-use std::sync::{
-    atomic::{AtomicI64, Ordering},
-    Arc,
+use std::{
+    borrow::Borrow,
+    sync::{
+        atomic::{AtomicI64, Ordering},
+        Arc,
+    },
 };
 
 pub type Sequence = i64;
@@ -68,7 +71,7 @@ pub trait Sequencer {
 
 pub trait WaitStrategy: Send + Sync {
     fn new() -> Self;
-    fn wait_for<F: Fn() -> bool, S: AsRef<AtomicSequence>>(
+    fn wait_for<F: Fn() -> bool, S: Borrow<AtomicSequence>>(
         &self,
         sequence: Sequence,
         dependencies: &[S],

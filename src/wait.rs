@@ -1,6 +1,9 @@
 use crate::prelude::*;
 use crate::utils::*;
-use std::sync::{Condvar, Mutex};
+use std::{
+    borrow::Borrow,
+    sync::{Condvar, Mutex},
+};
 
 pub struct SpinLoopWaitStrategy;
 
@@ -14,7 +17,7 @@ impl WaitStrategy for SpinLoopWaitStrategy {
         SpinLoopWaitStrategy {}
     }
 
-    fn wait_for<F: Fn() -> bool, S: AsRef<AtomicSequence>>(
+    fn wait_for<F: Fn() -> bool, S: Borrow<AtomicSequence>>(
         &self,
         sequence: Sequence,
         dependencies: &[S],
@@ -36,13 +39,13 @@ impl WaitStrategy for SpinLoopWaitStrategy {
 
 impl WaitStrategy for BlockingWaitStrategy {
     fn new() -> Self {
-        BlockingWaitStrategy {
+        Self {
             cvar: Condvar::new(),
             guard: Mutex::new(()),
         }
     }
 
-    fn wait_for<F: Fn() -> bool, S: AsRef<AtomicSequence>>(
+    fn wait_for<F: Fn() -> bool, S: Borrow<AtomicSequence>>(
         &self,
         sequence: Sequence,
         dependencies: &[S],

@@ -31,7 +31,7 @@ fn disrustor_channel<S: Sequencer, F: FnOnce(&RingBuffer<i64>) -> S>(n: u64, b: 
     let gating_sequence = vec![sequencer.get_cursor()];
     let barrier = sequencer.create_barrier(&gating_sequence);
     let processor = BatchEventProcessor::create(move |data, sequence, _| {
-        assert!(*data == sequence);
+        assert_eq!(*data, sequence);
     });
 
     sequencer.add_gating_sequence(&processor.get_cursor());
@@ -57,7 +57,7 @@ fn disrustor_channel<S: Sequencer, F: FnOnce(&RingBuffer<i64>) -> S>(n: u64, b: 
 
     sequencer.drain();
     handle.join();
-    assert!(counter == n);
+    assert_eq!(counter, n);
 }
 
 fn criterion_benchmark(c: &mut Criterion) {

@@ -28,6 +28,10 @@ impl<T: Default> RingBuffer<T> {
 }
 
 impl<T: Send + Sync> DataProvider<T> for RingBuffer<T> {
+    fn buffer_size(&self) -> usize {
+        self.capacity
+    }
+
     unsafe fn get_mut(&self, sequence: Sequence) -> &mut T {
         let index = sequence as usize & self.mask;
         let cell = self.data.get_unchecked(index);
@@ -38,10 +42,6 @@ impl<T: Send + Sync> DataProvider<T> for RingBuffer<T> {
         let index = sequence as usize & self.mask;
         let cell = self.data.get_unchecked(index);
         &*cell.get()
-    }
-
-    fn buffer_size(&self) -> usize {
-        self.capacity
     }
 }
 

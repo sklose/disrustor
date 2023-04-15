@@ -1,13 +1,14 @@
 use crate::prelude::*;
 use std::{
+    borrow::Borrow,
     iter::*,
     sync::atomic::{AtomicU64, Ordering},
 };
 
-pub fn min_cursor_sequence<S: AsRef<AtomicSequence>>(sequences: &[S]) -> Sequence {
+pub fn min_cursor_sequence<S: Borrow<AtomicSequence>>(sequences: &[S]) -> Sequence {
     sequences
         .iter()
-        .map(|s| s.as_ref().get())
+        .map(|s| s.borrow().get())
         .min()
         .unwrap_or_default()
 }
