@@ -52,7 +52,7 @@ mod test {
 
         let gating_sequences = vec![sequencer.get_cursor()];
         let barrier = sequencer.create_barrier(&gating_sequences);
-        let consumer = BatchEventProcessor::create(Checker{});
+        let consumer = BatchEventProcessor::create(Checker {});
 
         sequencer.add_gating_sequence(&consumer.get_cursor());
         let data_provider = ring_buffer;
@@ -80,7 +80,7 @@ mod test {
             .with_blocking_wait()
             .with_single_producer()
             .with_barrier(|b| {
-                b.handle_events_mut(Checker{});
+                b.handle_events_mut(Checker {});
             })
             .build();
 

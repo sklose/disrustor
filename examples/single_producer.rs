@@ -45,7 +45,7 @@ fn follow_sequence<W: WaitStrategy + 'static>() {
             b.handle_events_mut(Doubler {});
         })
         .with_barrier(|b| {
-            b.handle_events(Checker{});
+            b.handle_events(Checker {});
         })
         .build();
 

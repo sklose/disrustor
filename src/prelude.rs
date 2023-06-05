@@ -104,11 +104,11 @@ pub trait Runnable: Send {
 }
 
 pub trait EventHandler<T> {
-    fn handle_event(&mut self, event: &T, seq: Sequence, eob: bool);
+    fn handle_event(&mut self, event: &T, sequence: Sequence, eob: bool);
 }
 
 pub trait EventHandlerMut<T> {
-    fn handle_event(&mut self, event: &mut T, seq: Sequence, eob: bool);
+    fn handle_event(&mut self, event: &mut T, sequence: Sequence, eob: bool);
 }
 
 pub trait EventProcessorExecutor<'a> {

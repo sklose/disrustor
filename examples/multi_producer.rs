@@ -42,10 +42,10 @@ fn follow_sequence<W: WaitStrategy + 'static>() {
         .with_wait_strategy::<W>()
         .with_multi_producer()
         .with_barrier(|b| {
-            b.handle_events_mut(Doubler{});
+            b.handle_events_mut(Doubler {});
         })
         .with_barrier(|b| {
-            b.handle_events(Checker{});
+            b.handle_events(Checker {});
         })
         .build();
 
