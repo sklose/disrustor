@@ -103,6 +103,14 @@ pub trait Runnable: Send {
     fn run(self: Box<Self>);
 }
 
+pub trait EventHandler<T> {
+    fn handle_event(&mut self, event: &T, sequence: Sequence, eob: bool);
+}
+
+pub trait EventHandlerMut<T> {
+    fn handle_event(&mut self, event: &mut T, sequence: Sequence, eob: bool);
+}
+
 pub trait EventProcessorExecutor<'a> {
     type Handle: ExecutorHandle;
     fn with_runnables(items: Vec<Box<dyn Runnable + 'a>>) -> Self;

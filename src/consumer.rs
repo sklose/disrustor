@@ -5,10 +5,10 @@ use std::sync::Arc;
 pub struct BatchEventProcessor;
 
 impl BatchEventProcessor {
-    pub fn create<'a, F, T>(handler: F) -> impl EventProcessor<'a, T>
+    pub fn create<'a, E, T>(handler: E) -> impl EventProcessor<'a, T>
     where
         T: Send + 'a,
-        F: Fn(&T, Sequence, bool) + Send + 'static,
+        E: EventHandler<T> + Send + 'a,
     {
         Processor {
             handler,
@@ -17,10 +17,10 @@ impl BatchEventProcessor {
         }
     }
 
-    pub fn create_mut<'a, F, T>(handler: F) -> impl EventProcessorMut<'a, T>
+    pub fn create_mut<'a, E, T>(handler: E) -> impl EventProcessorMut<'a, T>
     where
         T: Send + 'a,
-        F: Fn(&mut T, Sequence, bool) + Send + 'static,
+        E: EventHandlerMut<T> + Send + 'a,
     {
         ProcessorMut {
             handler,
@@ -30,33 +30,33 @@ impl BatchEventProcessor {
     }
 }
 
-struct Processor<F, T> {
-    handler: F,
+struct Processor<E, T> {
+    handler: E,
     cursor: Arc<AtomicSequence>,
     _marker: PhantomData<T>,
 }
 
-struct ProcessorMut<F, T> {
-    handler: F,
+struct ProcessorMut<E, T> {
+    handler: E,
     cursor: Arc<AtomicSequence>,
     _marker: PhantomData<T>,
 }
 
-struct RunnableProcessor<F, T, D: DataProvider<T>, B: SequenceBarrier> {
-    processor: Processor<F, T>,
+struct RunnableProcessor<E, T, D: DataProvider<T>, B: SequenceBarrier> {
+    processor: Processor<E, T>,
     data_provider: Arc<D>,
     barrier: B,
 }
 
-struct RunnableProcessorMut<F, T, D: DataProvider<T>, B: SequenceBarrier> {
-    processor: ProcessorMut<F, T>,
+struct RunnableProcessorMut<E, T, D: DataProvider<T>, B: SequenceBarrier> {
+    processor: ProcessorMut<E, T>,
     data_provider: Arc<D>,
     barrier: B,
 }
 
-impl<'a, F, T> EventProcessorMut<'a, T> for Processor<F, T>
+impl<'a, E, T> EventProcessorMut<'a, T> for Processor<E, T>
 where
-    F: Fn(&T, Sequence, bool) + Send + 'static,
+    E: EventHandler<T> + Send + 'a,
     T: Send + 'a,
 {
     fn prepare<B: SequenceBarrier + 'a, D: DataProvider<T> + 'a>(
@@ -76,9 +76,9 @@ where
     }
 }
 
-impl<'a, F, T> EventProcessorMut<'a, T> for ProcessorMut<F, T>
+impl<'a, E, T> EventProcessorMut<'a, T> for ProcessorMut<E, T>
 where
-    F: Fn(&mut T, Sequence, bool) + Send + 'static,
+    E: EventHandlerMut<T> + Send + 'a,
     T: Send + 'a,
 {
     fn prepare<B: SequenceBarrier + 'a, D: DataProvider<T> + 'a>(
@@ -98,22 +98,22 @@ where
     }
 }
 
-impl<'a, F, T> EventProcessor<'a, T> for Processor<F, T>
+impl<'a, E, T> EventProcessor<'a, T> for Processor<E, T>
 where
-    F: Fn(&T, Sequence, bool) + Send + 'static,
+    E: EventHandler<T> + Send + 'a,
     T: Send + 'a,
 {
 }
 
-impl<F, T, D, B> Runnable for RunnableProcessor<F, T, D, B>
+impl<E, T, D, B> Runnable for RunnableProcessor<E, T, D, B>
 where
-    F: Fn(&T, Sequence, bool) + Send + 'static,
+    E: EventHandler<T> + Send,
     D: DataProvider<T>,
     B: SequenceBarrier,
     T: Send,
 {
-    fn run(self: Box<Self>) {
-        let f = &self.processor.handler;
+    fn run(mut self: Box<Self>) {
+        let f = &mut self.processor.handler;
         let cursor = &self.processor.cursor;
         let data_provider = &self.data_provider;
         let barrier = &self.barrier;
@@ -127,7 +127,7 @@ where
 
             for i in next..=available {
                 let value = unsafe { data_provider.get(i) };
-                f(value, i, i == available);
+                f.handle_event(value, i, i == available);
             }
 
             cursor.set(available);
@@ -136,15 +136,15 @@ where
     }
 }
 
-impl<F, T, D, B> Runnable for RunnableProcessorMut<F, T, D, B>
+impl<E, T, D, B> Runnable for RunnableProcessorMut<E, T, D, B>
 where
-    F: Fn(&mut T, Sequence, bool) + Send + 'static,
+    E: EventHandlerMut<T> + Send,
     D: DataProvider<T>,
     B: SequenceBarrier,
     T: Send,
 {
-    fn run(self: Box<Self>) {
-        let f = &self.processor.handler;
+    fn run(mut self: Box<Self>) {
+        let f = &mut self.processor.handler;
         let cursor = &self.processor.cursor;
         let data_provider = &self.data_provider;
         let barrier = &self.barrier;
@@ -158,7 +158,7 @@ where
 
             for i in next..=available {
                 let value = unsafe { data_provider.get_mut(i) };
-                f(value, i, i == available);
+                f.handle_event(value, i, i == available);
             }
 
             cursor.set(available);

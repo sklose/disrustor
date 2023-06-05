@@ -6,6 +6,14 @@ use std::sync::mpsc::channel;
 use std::sync::Arc;
 use std::time::Duration;
 
+struct Checker;
+
+impl EventHandler<i64> for Checker {
+    fn handle_event(&mut self, event: &i64, seq: Sequence, _: bool) {
+        assert_eq!(*event, seq);
+    }
+}
+
 fn mpsc_channel(n: u64) {
     let (tx, rx) = channel();
 
@@ -30,9 +38,7 @@ fn disrustor_channel<S: Sequencer, F: FnOnce(&RingBuffer<i64>) -> S>(n: u64, b: 
 
     let gating_sequence = vec![sequencer.get_cursor()];
     let barrier = sequencer.create_barrier(&gating_sequence);
-    let processor = BatchEventProcessor::create(move |data, sequence, _| {
-        assert_eq!(*data, sequence);
-    });
+    let processor = BatchEventProcessor::create(Checker {});
 
     sequencer.add_gating_sequence(&processor.get_cursor());
 

@@ -1,6 +1,6 @@
 [package]
 name = "disrustor"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2018"
 authors = ["Sebastian Klose <mail@sklose.com>"]
 description = "This project is a port of the LMAX Disruptor to Rust"
