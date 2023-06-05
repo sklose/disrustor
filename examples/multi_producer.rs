@@ -6,34 +6,46 @@ use log::*;
 
 const MAX: i64 = 200i64;
 
+struct Doubler;
+
+impl EventHandlerMut<u32> for Doubler {
+    fn handle_event(&mut self, data: &mut u32, sequence: Sequence, _: bool) {
+        let val = *data;
+        if i64::from(val) != sequence {
+            panic!(
+                "concurrency problem detected (p1), expected {}, but got {}",
+                sequence, val
+            );
+        }
+        debug!("updating sequence {} from {} to {}", sequence, val, val * 2);
+        *data = val * 2;
+    }
+}
+
+struct Checker;
+
+impl EventHandler<u32> for Checker {
+    fn handle_event(&mut self, data: &u32, sequence: Sequence, _: bool) {
+        let val = *data;
+        if i64::from(val) != sequence * 2 {
+            panic!(
+                "concurrency problem detected (p2), expected {}, but got {}",
+                sequence * 2,
+                val
+            );
+        }
+    }
+}
+
 fn follow_sequence<W: WaitStrategy + 'static>() {
     let (executor, producer) = DisrustorBuilder::with_ring_buffer(128)
         .with_wait_strategy::<W>()
         .with_multi_producer()
         .with_barrier(|b| {
-            b.handle_events_mut(|data, sequence, _| {
-                let val = *data;
-                if i64::from(val) != sequence {
-                    panic!(
-                        "concurrency problem detected (p1), expected {}, but got {}",
-                        sequence, val
-                    );
-                }
-                debug!("updating sequence {} from {} to {}", sequence, val, val * 2);
-                *data = val * 2;
-            });
+            b.handle_events_mut(Doubler{});
         })
         .with_barrier(|b| {
-            b.handle_events(|data, sequence, _| {
-                let val = *data;
-                if i64::from(val) != sequence * 2 {
-                    panic!(
-                        "concurrency problem detected (p2), expected {}, but got {}",
-                        sequence * 2,
-                        val
-                    );
-                }
-            });
+            b.handle_events(Checker{});
         })
         .build();
 
