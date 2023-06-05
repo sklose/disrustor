@@ -143,14 +143,14 @@ impl<'a, S: Sequencer + 'a, W: WaitStrategy, D: DataProvider<T> + 'a, T: Send + 
 impl<'a, S: Sequencer + 'a, D: DataProvider<T> + 'a, T: Send + 'a> BarrierScope<'a, S, D, T> {
     pub fn handle_events<F>(&mut self, handler: F)
     where
-        F: Fn(&T, Sequence, bool) + Send + 'static,
+        F: EventHandler<T> + Send + 'a,
     {
         self.handle_events_with(BatchEventProcessor::create(handler))
     }
 
     pub fn handle_events_mut<F>(&mut self, handler: F)
     where
-        F: Fn(&mut T, Sequence, bool) + Send + 'static,
+        F: EventHandlerMut<T> + Send + 'a,
     {
         self.handle_events_with(BatchEventProcessor::create_mut(handler))
     }

@@ -25,6 +25,25 @@ mod test {
     use super::*;
     use std::sync::Arc;
 
+    struct Checker;
+    impl EventHandler<i64> for Checker {
+        fn handle_event(&mut self, data: &i64, sequence: Sequence, _: bool) {
+            if *data != sequence {
+                dbg!(*data);
+                dbg!(sequence);
+                panic!();
+            }
+        }
+    }
+    impl EventHandlerMut<i64> for Checker {
+        fn handle_event(&mut self, data: &mut i64, sequence: Sequence, _: bool) {
+            if *data != sequence {
+                dbg!(*data);
+                dbg!(sequence);
+                panic!();
+            }
+        }
+    }
     #[test]
     fn test_blocking_wait_strategy() {
         let ring_buffer: Arc<RingBuffer<i64>> = Arc::new(RingBuffer::new(4096));
@@ -33,13 +52,7 @@ mod test {
 
         let gating_sequences = vec![sequencer.get_cursor()];
         let barrier = sequencer.create_barrier(&gating_sequences);
-        let consumer = BatchEventProcessor::create(|data, sequence, _| {
-            if *data != sequence {
-                dbg!(*data);
-                dbg!(sequence);
-                panic!();
-            }
-        });
+        let consumer = BatchEventProcessor::create(Checker{});
 
         sequencer.add_gating_sequence(&consumer.get_cursor());
         let data_provider = ring_buffer;
@@ -67,13 +80,7 @@ mod test {
             .with_blocking_wait()
             .with_single_producer()
             .with_barrier(|b| {
-                b.handle_events_mut(|data, sequence, _| {
-                    if *data != sequence {
-                        dbg!(*data);
-                        dbg!(sequence);
-                        panic!();
-                    }
-                });
+                b.handle_events_mut(Checker{});
             })
             .build();
 
